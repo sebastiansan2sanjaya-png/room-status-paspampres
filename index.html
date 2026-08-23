@@ -1038,5 +1038,219 @@ supabaseClient.auth.onAuthStateChange((event,session)=>{
 });
 boot();
 </script>
+  <script>
+(function(){
+  const style = document.createElement('style');
+  style.textContent = `
+    #changePasswordBtn{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      z-index:9998;
+      border:0;
+      border-radius:14px;
+      padding:12px 16px;
+      background:#356ff2;
+      color:#fff;
+      font-size:14px;
+      font-weight:700;
+      box-shadow:0 8px 24px rgba(20,32,55,.18);
+      cursor:pointer;
+    }
+
+    #changePasswordOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(21,29,42,.28);
+      backdrop-filter:blur(4px);
+      z-index:9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    #changePasswordCard{
+      width:min(420px,100%);
+      background:#fff;
+      border-radius:20px;
+      padding:24px;
+      box-shadow:0 18px 50px rgba(20,32,55,.22);
+    }
+
+    #changePasswordCard h3{
+      margin:0 0 6px;
+      font-size:22px;
+      color:#18212f;
+    }
+
+    #changePasswordCard p{
+      margin:0 0 20px;
+      color:#687386;
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    #changePasswordCard label{
+      display:block;
+      margin:14px 0 6px;
+      font-size:13px;
+      font-weight:700;
+      color:#394456;
+    }
+
+    #changePasswordCard input{
+      width:100%;
+      box-sizing:border-box;
+      padding:13px 14px;
+      border:1px solid #dce3ef;
+      border-radius:12px;
+      outline:none;
+      font-size:15px;
+    }
+
+    #changePasswordCard input:focus{
+      border-color:#356ff2;
+      box-shadow:0 0 0 3px rgba(53,111,242,.12);
+    }
+
+    #passwordMessage{
+      margin-top:12px;
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .password-actions{
+      display:flex;
+      gap:10px;
+      margin-top:20px;
+    }
+
+    .password-actions button{
+      flex:1;
+      border:0;
+      border-radius:12px;
+      padding:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    #saveNewPassword{
+      background:#356ff2;
+      color:#fff;
+    }
+
+    #closePasswordModal{
+      background:#eef2f7;
+      color:#344054;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const btn = document.createElement('button');
+  btn.id = 'changePasswordBtn';
+  btn.type = 'button';
+  btn.textContent = '🔑 Ubah Password';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'changePasswordOverlay';
+
+  overlay.innerHTML = `
+    <div id="changePasswordCard">
+      <h3>Ubah Password</h3>
+      <p>
+        Buat password baru untuk akun Room Status kamu.
+        Password baru akan langsung tersimpan di Supabase.
+      </p>
+
+      <label>Password Baru</label>
+      <input
+        id="newPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Minimal 8 karakter"
+      >
+
+      <label>Konfirmasi Password</label>
+      <input
+        id="confirmPassword"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Ketik ulang password"
+      >
+
+      <div id="passwordMessage"></div>
+
+      <div class="password-actions">
+        <button id="closePasswordModal" type="button">Batal</button>
+        <button id="saveNewPassword" type="button">Simpan Password</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(btn);
+  document.body.appendChild(overlay);
+
+  btn.addEventListener('click',()=>{
+    overlay.style.display='flex';
+    document.getElementById('newPassword').focus();
+  });
+
+  document.getElementById('closePasswordModal').addEventListener('click',()=>{
+    overlay.style.display='none';
+    document.getElementById('passwordMessage').textContent='';
+  });
+
+  document.getElementById('saveNewPassword').addEventListener('click',async()=>{
+    const newPassword=document.getElementById('newPassword').value;
+    const confirmPassword=document.getElementById('confirmPassword').value;
+    const msg=document.getElementById('passwordMessage');
+    const saveBtn=document.getElementById('saveNewPassword');
+
+    msg.style.color='#d64545';
+
+    if(newPassword.length<8){
+      msg.textContent='Password minimal 8 karakter.';
+      return;
+    }
+
+    if(newPassword!==confirmPassword){
+      msg.textContent='Konfirmasi password tidak sama.';
+      return;
+    }
+
+    saveBtn.disabled=true;
+    saveBtn.textContent='Menyimpan...';
+    msg.textContent='';
+
+    try{
+      const {error}=await supabaseClient.auth.updateUser({
+        password:newPassword
+      });
+
+      if(error) throw error;
+
+      msg.style.color='#2e8b57';
+      msg.textContent='Password berhasil diubah.';
+
+      document.getElementById('newPassword').value='';
+      document.getElementById('confirmPassword').value='';
+
+      setTimeout(()=>{
+        overlay.style.display='none';
+        msg.textContent='';
+      },1500);
+
+    }catch(error){
+      console.error('Password update failed:',error);
+      msg.style.color='#d64545';
+      msg.textContent='Gagal mengubah password: '+(error.message||'Terjadi kesalahan.');
+    }finally{
+      saveBtn.disabled=false;
+      saveBtn.textContent='Simpan Password';
+    }
+  });
+})();
+</script>
 </body>
 </html>
