@@ -288,7 +288,48 @@ select{width:100%;height:48px;border:1px solid var(--line);border-radius:13px;ba
 .auth-btn{width:100%;height:50px;border:0;border-radius:13px;background:#356ff2;color:#fff;font-weight:800;margin-top:16px}
 .auth-msg{min-height:18px;margin-top:11px;font-size:12px;color:#ef5558}
 .auth-role{margin-top:14px;padding:10px 12px;border-radius:11px;background:#f7f9fc;font-size:11px;color:#687386}
-.auth-user{display:flex;align-items:center;gap:9px}
+.view-only-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border:1px solid #e6eaf0;
+  border-radius:12px;
+  background:#f8f9fc;
+  color:#344054;
+  text-align:left;
+  cursor:pointer;
+}
+
+.view-only-btn:hover{
+  background:#f1f4f9;
+}
+
+.view-only-icon{
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:#e8eefc;
+  color:#356ff2;
+  font-size:16px;
+}
+
+.view-only-btn strong{
+  display:block;
+  font-size:13px;
+  font-weight:800;
+}
+
+.view-only-btn small{
+  display:block;
+  margin-top:3px;
+  font-size:11px;
+  color:#687386;
+}.auth-user{display:flex;align-items:center;gap:9px}
 .auth-user-badge{font-size:10px;font-weight:800;padding:5px 8px;border-radius:8px;background:#edf3ff;color:#356ff2}
 .signout-btn{border:1px solid #dfe4eb;background:#fff;color:#566274;border-radius:10px;height:34px;padding:0 10px;font-size:11px;font-weight:800}
 body.authenticated .auth-screen{display:none}
@@ -310,7 +351,13 @@ body:not(.authenticated) .app{display:none}
     <button id="loginBtn" class="auth-btn" type="button">Masuk</button>
     <div id="loginMsg" class="auth-msg"></div>
     <div class="auth-role">
-  <button id="viewOnlyBtn" type="button">View Only</button>
+  <button id="viewOnlyBtn" type="button" class="view-only-btn">
+  <span class="view-only-icon">👁</span>
+  <span>
+    <strong>View Only</strong>
+    <small>Akses untuk melihat data tanpa mengubah</small>
+  </span>
+  </button>
     </div>
 </div>
 </div>
