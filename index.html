@@ -309,10 +309,9 @@ body:not(.authenticated) .app{display:none}
     <input id="loginPassword" class="auth-input" type="password" autocomplete="current-password" placeholder="Password">
     <button id="loginBtn" class="auth-btn" type="button">Masuk</button>
     <div id="loginMsg" class="auth-msg"></div>
-    <<div class="auth-role">
-  <span>View Only</span>
-  <div class="auth-role">
-  <span>View Only</span>
+    <div class="auth-role">
+  <button id="viewOnlyBtn" type="button">View Only</button>
+    </div>
 </div>
 </div>
   </div>
@@ -1017,6 +1016,18 @@ async function bootApp(){
 }
 
 document.getElementById('loginBtn').onclick=login;
+  document.getElementById('viewOnlyBtn').onclick=()=>{
+  currentProfile={
+    role:'view_only'
+  };
+
+  currentSession=null;
+
+  document.body.classList.add('authenticated');
+
+  applyPermissions();
+  bootApp();
+};
 document.getElementById('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 document.getElementById('signoutBtn').onclick=logout;
 
