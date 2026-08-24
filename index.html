@@ -953,7 +953,7 @@ function closeSheet(){
 async function save(){
  const u=units.find(x=>x.id===editingId);if(!u)return;
  const previousStatus=u.status;
- const newPic=(document.getElementById('updatedBy').value||'').trim();
+ const newPic=currentProfile?.username||'';
  const newUpdated=new Date();
  const nextStatus=pendingStatus;
  const {error}=await supabaseClient.from(CLOUD_TABLE).update({status:nextStatus,updated_by:newPic||null,updated_at:newUpdated.toISOString()}).eq('tower',Number(u.tower.slice(1))).eq('unit_number',u.number);
