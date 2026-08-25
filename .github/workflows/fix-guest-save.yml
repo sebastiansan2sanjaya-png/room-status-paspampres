@@ -55,3 +55,5 @@ jobs:
           git add index.html .github/workflows/fix-guest-save.yml
           git commit -m "Fix guest save via RPC"
           git push
+
+      # temporary trigger to ensure this workflow runs after being installed
