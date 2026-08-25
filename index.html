@@ -523,13 +523,56 @@ body:not(.authenticated) .app{display:none}
     <div class="section-label">Pilih Status Baru</div>
     <div class="status-select-grid" id="statusOptions"></div>
   </div>
+<div class="sheet-section hidden" id="guestSection">
+  <div class="section-label">Daftar Tamu</div>
 
+  <div class="current" id="guestSummary">
+    Belum ada data tamu
+  </div>
+
+  <button
+    type="button"
+    class="history-btn"
+    id="guestBtn">
+    Daftar Tamu
+  </button>
+</div>
   <div class="meta">
     <div><div class="meta-label">Last Update</div><div class="meta-value" id="lastUpdate">—</div></div>
     <div><div class="meta-label">Updated By</div><input id="updatedBy" class="meta-input" value="" placeholder="Nama PIC"></div>
   </div>
 
   <div class="actions"><button class="history-btn" id="historyBtn" type="button">Riwayat Status</button><button class="cancel" id="cancel">Batal</button><button class="save" id="save">Simpan Perubahan</button></div>
+</div><div id="guestOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;width:min(520px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:.08em;">DAFTAR TAMU</div>
+        <div id="guestSheetTitle" style="font-size:24px;font-weight:800;color:#1e293b;">UNIT</div>
+      </div>
+
+      <button type="button" id="guestClose"
+        style="border:0;background:#f1f5f9;border-radius:50%;width:40px;height:40px;font-size:22px;cursor:pointer;">
+        ×
+      </button>
+    </div>
+
+    <div id="guestInputs" style="display:grid;gap:10px;"></div>
+
+    <div style="margin-top:20px;display:flex;gap:10px;">
+      <button type="button" id="guestCancel"
+        style="flex:1;padding:12px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;font-weight:700;cursor:pointer;">
+        Batal
+      </button>
+
+      <button type="button" id="guestSave"
+        style="flex:1;padding:12px;border:0;background:#2563eb;color:#fff;border-radius:10px;font-weight:700;cursor:pointer;">
+        Simpan Tamu
+      </button>
+    </div>
+
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -924,17 +967,79 @@ function renderUnits(){
 
 function renderAll(){renderSummary();bindStatusCards();renderTowerSummary();renderSystemLastUpdate();renderTowers();renderUnits();}
 let editingId=null, pendingStatus=null;
-function openSheet(id){
+async function openGuestSheet(u){
+  const overlay=document.getElementById('guestOverlay');
+  const title=document.getElementById('guestSheetTitle');
+  const inputs=document.getElementById('guestInputs');
+
+  if(!overlay || !inputs)return;
+
+  title.textContent=`UNIT ${u.number}`;
+  inputs.innerHTML='Memuat data tamu...';
+
+  const {data,error}=await supabaseClient
+    .from('room_guests')
+    .select('guest_name,guest_order')
+    .eq('unit_id',u.id)
+    .order('guest_order',{ascending:true});
+
+  if(error){
+    console.error(error);
+    inputs.innerHTML='<div style="color:#dc2626;">Gagal memuat data tamu.</div>';
+    overlay.style.display='flex';
+    return;
+  }
+
+  const guests=data||[];
+
+  inputs.innerHTML=Array.from({length:6},(_,i)=>{
+    const guest=guests.find(g=>Number(g.guest_order)===i+1);
+    return `
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:5px;">
+          TAMU ${i+1}
+        </div>
+        <input
+          type="text"
+          class="guest-input"
+          data-order="${i+1}"
+          value="${guest?.guest_name||''}"
+          placeholder="Nama tamu ${i+1}"
+          style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;">
+      </div>
+    `;
+  }).join('');
+
+  overlay.style.display='flex';
+}function openSheet(id){
  const u=units.find(x=>x.id===id); if(!u)return;
  editingId=id;pendingStatus=u.status;
  document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;
  document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;
  document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';
- renderSheetStatus(u);renderOptions();document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';
+ renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';
 }
 function renderSheetStatus(u){
  const s=STATUS[u.status];
  document.getElementById('currentStatus').innerHTML=`<span class="badge" style="color:${s.color};background:${s.color}18">${u.status}</span><div><b>${s.name}</b><div style="font-size:10px;color:#687386;margin-top:2px">Status saat ini</div></div>`;
+}function renderGuestSection(u){
+  const section=document.getElementById('guestSection');
+  if(!section)return;
+
+  const guestBtn=document.getElementById('guestBtn');
+  const guestSummary=document.getElementById('guestSummary');
+
+  const showGuest=u.status==='OD';
+
+  section.classList.toggle('hidden',!showGuest);
+
+  if(!showGuest)return;
+
+  guestSummary.textContent='Belum ada data tamu';
+
+  if(guestBtn){
+    guestBtn.onclick=()=>openGuestSheet(u);
+  }
 }
 function renderOptions(){
  document.getElementById('statusOptions').innerHTML=Object.entries(STATUS).filter(([code])=>canEditStatus(code)).map(([code,s])=>`
