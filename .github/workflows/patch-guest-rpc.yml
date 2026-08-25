@@ -1,0 +1,49 @@
+name: Patch guest save RPC
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old="""    const {error:deleteError}=await supabaseClient
+      .from('room_guests')
+      .delete()
+      .eq('unit_id',u.dbId);
+
+    if(deleteError) throw deleteError;
+
+    if(rows.length){
+      const {error:insertError}=await supabaseClient
+        .from('room_guests')
+        .insert(rows);
+      if(insertError) throw insertError;
+    }
+"""
+          new="""    const {data:saveCount,error:saveError}=await supabaseClient
+      .rpc('save_room_guests',{
+        p_unit_id:u.dbId,
+        p_guests:rows
+      });
+
+    if(saveError) throw saveError;
+"""
+          if old not in s:
+              raise SystemExit('TARGET_NOT_FOUND')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix guest save via RPC"
+          git push
