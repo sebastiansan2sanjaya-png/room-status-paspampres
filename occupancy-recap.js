@@ -4,17 +4,18 @@
   let units=[], guests=[];
 
   async function load(){
-    if(!window.supabaseClient) return {units:[],guests:[]};
+    // index.html creates supabaseClient as a top-level const. A top-level
+    // const is not exposed as window.supabaseClient, so use the identifier
+    // directly here. This was the reason the recap silently returned 0.
+    if(typeof supabaseClient==='undefined') throw new Error('Koneksi Supabase belum tersedia.');
 
-    const {data,error}=await window.supabaseClient.rpc('get_occupancy_recap');
+    const {data,error}=await supabaseClient.rpc('get_occupancy_recap');
     if(error) throw error;
 
-    // PostgREST normally returns jsonb as an object, but accept a JSON string too.
     let payload=data||{};
     if(typeof payload==='string'){
-      try{ payload=JSON.parse(payload); }catch(e){ payload={}; }
+      try{payload=JSON.parse(payload);}catch(e){payload={};}
     }
-    // Be tolerant of a one-row wrapper as well.
     if(Array.isArray(payload) && payload.length===1 && payload[0] && typeof payload[0]==='object') payload=payload[0];
 
     units=Array.isArray(payload.units)?payload.units:[];
@@ -28,7 +29,6 @@
   function build(){
     const byUnit={};
     guests.forEach(g=>(byUnit[g.unit_id]??=[]).push(g));
-
     const tower={};
     units.forEach(u=>{
       const pax=(byUnit[u.id]||[]).length;
@@ -36,14 +36,12 @@
       tower[u.tower].units++;
       tower[u.tower].pax+=pax;
       tower[u.tower].rows.push({
-        ...u,
-        pax,
+        ...u,pax,
         names:(byUnit[u.id]||[])
           .sort((a,b)=>Number(a.guest_order)-Number(b.guest_order))
           .map(x=>x.guest_name)
       });
     });
-
     return {byUnit,tower,totalUnits:units.length,totalPax:guests.length};
   }
 
@@ -77,6 +75,8 @@
     const modal=document.createElement('div');modal.id='occupancyRecapModal';modal.innerHTML='<div class="occ-sheet"><div class="occ-head"><h2>Rekap Data Tamu</h2><button class="occ-close" type="button">×</button></div><div id="occupancyRecapBody"></div></div>';document.body.appendChild(modal);modal.querySelector('.occ-close').onclick=()=>modal.style.display='none';modal.addEventListener('click',e=>{if(e.target===modal)modal.style.display='none'});
   }
 
-  window.openOccupancyRecap=open;window.refreshOccupancyRecap=refresh;
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(inject,400));
+  window.openOccupancyRecap=open;
+  window.refreshOccupancyRecap=refresh;
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(inject,400));
+  else setTimeout(inject,400);
 })();
