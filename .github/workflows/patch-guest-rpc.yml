@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, 'Fix guest save via RPC') }}
+    if: "${{ !contains(github.event.head_commit.message, 'Fix guest save via RPC') }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +16,7 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          old="""    const {error:deleteError}=await supabaseClient
+          old = '''    const {error:deleteError}=await supabaseClient
       .from('room_guests')
       .delete()
       .eq('unit_id',u.dbId);
@@ -29,15 +29,15 @@ jobs:
         .insert(rows);
       if(insertError) throw insertError;
     }
-"""
-          new="""    const {data:saveCount,error:saveError}=await supabaseClient
+'''
+          new = '''    const {data:saveCount,error:saveError}=await supabaseClient
       .rpc('save_room_guests',{
         p_unit_id:u.dbId,
         p_guests:rows
       });
 
     if(saveError) throw saveError;
-"""
+'''
           if old not in s:
               raise SystemExit('TARGET_NOT_FOUND')
           p.write_text(s.replace(old,new,1),encoding='utf-8')
