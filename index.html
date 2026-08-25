@@ -157,6 +157,7 @@ select{width:100%;height:48px;border:1px solid var(--line);border-radius:13px;ba
 .pdf-last-update{text-align:right;font-size:8px;color:#687386;margin-top:10px}
 
 .history-btn{height:42px;padding:0 14px;border:1px solid #dfe4eb;background:#fff;border-radius:12px;color:#566274;font-weight:800;cursor:pointer;grid-column:1/-1;margin-bottom:2px}.history-overlay{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;align-items:flex-end;justify-content:center;z-index:1100}.history-overlay.show{display:flex}.history-modal{width:min(100%,520px);max-height:78vh;background:#fff;border-radius:24px 24px 0 0;padding:18px;box-shadow:0 -10px 35px rgba(0,0,0,.16);overflow:auto}.history-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}.history-kicker{font-size:10px;font-weight:800;color:#7b8492;letter-spacing:.08em}.history-title{font-size:20px;font-weight:800;color:#18212f}.history-close{width:38px;height:38px;border:0;background:#f3f5f8;border-radius:50%;font-size:27px;color:#566274}.history-unit{font-size:12px;color:#687386;margin-bottom:14px}.history-list{display:grid;gap:9px}.history-item{border:1px solid #e2e7ee;border-radius:14px;padding:11px 12px}.history-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.history-status{font-size:12px;font-weight:800}.history-date{font-size:10px;color:#7a8492;text-align:right}.history-change{font-size:11px;color:#566274;margin-top:5px}.history-pic{font-size:10px;color:#8b95a3;margin-top:5px}.history-empty{padding:24px 10px;text-align:center;color:#8b95a3;font-size:12px}
+.guest-audit-panel{margin-top:18px;border-top:1px solid #e8ecf1;padding-top:16px}.guest-audit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.guest-audit-title{font-size:12px;font-weight:800;color:#334155;letter-spacing:.04em}.guest-audit-sub{font-size:10px;color:#94a3b8}.guest-audit-list{display:grid;gap:8px}.guest-audit-item{border:1px solid #e2e8f0;border-radius:12px;padding:10px 11px;background:#f8fafc}.guest-audit-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.guest-audit-action{font-size:10px;font-weight:800;padding:4px 7px;border-radius:7px;background:#eef2ff;color:#4f46e5}.guest-audit-action.update{background:#ecfdf5;color:#047857}.guest-audit-action.delete{background:#fff1f2;color:#be123c}.guest-audit-action.add{background:#eff6ff;color:#2563eb}.guest-audit-time{font-size:9px;color:#94a3b8}.guest-audit-detail{font-size:12px;font-weight:700;color:#334155;margin-top:6px}.guest-audit-by{font-size:10px;color:#94a3b8;margin-top:5px}.guest-audit-by strong{color:#64748b}.guest-audit-loading,.guest-audit-empty{padding:14px;text-align:center;color:#94a3b8;font-size:11px;border:1px dashed #dbe2ea;border-radius:10px}
 /* TOWER SUMMARY */
 .tower-summary-card{margin-top:12px}
 .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -559,6 +560,14 @@ body:not(.authenticated) .app{display:none}
     </div>
 
     <div id="guestInputs" style="display:grid;gap:10px;"></div>
+
+    <div class="guest-audit-panel">
+      <div class="guest-audit-head">
+        <div class="guest-audit-title">RIWAYAT PERUBAHAN</div>
+        <div class="guest-audit-sub">Audit Tamu</div>
+      </div>
+      <div id="guestAuditList" class="guest-audit-list">Belum dimuat</div>
+    </div>
 
     <div style="margin-top:20px;display:flex;gap:10px;">
       <button type="button" id="guestCancel"
@@ -1060,6 +1069,8 @@ const guests=data||[];
   }
 
   overlay.style.display='flex';
+  const auditList=document.getElementById('guestAuditList');
+  if(typeof window.loadGuestAudit==='function') window.loadGuestAudit(u.dbId,auditList);
 }
 function closeGuestSheet(){
   const overlay=document.getElementById('guestOverlay');
@@ -1634,5 +1645,6 @@ boot();
   });
 })();
 </script>
+<script src="guest-audit.js"></script>
 </body>
 </html>
