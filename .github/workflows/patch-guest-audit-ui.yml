@@ -1,0 +1,44 @@
+name: Patch Guest Audit UI
+on:
+  push:
+    paths:
+      - 'guest-audit.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          css='''.guest-audit-panel{margin-top:18px;border-top:1px solid #e8ecf1;padding-top:16px}.guest-audit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.guest-audit-title{font-size:12px;font-weight:800;color:#334155;letter-spacing:.04em}.guest-audit-sub{font-size:10px;color:#94a3b8}.guest-audit-list{display:grid;gap:8px}.guest-audit-item{border:1px solid #e2e8f0;border-radius:12px;padding:10px 11px;background:#f8fafc}.guest-audit-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.guest-audit-action{font-size:10px;font-weight:800;padding:4px 7px;border-radius:7px;background:#eef2ff;color:#4f46e5}.guest-audit-action.update{background:#ecfdf5;color:#047857}.guest-audit-action.delete{background:#fff1f2;color:#be123c}.guest-audit-action.add{background:#eff6ff;color:#2563eb}.guest-audit-time{font-size:9px;color:#94a3b8}.guest-audit-detail{font-size:12px;font-weight:700;color:#334155;margin-top:6px}.guest-audit-by{font-size:10px;color:#94a3b8;margin-top:5px}.guest-audit-by strong{color:#64748b}.guest-audit-loading,.guest-audit-empty{padding:14px;text-align:center;color:#94a3b8;font-size:11px;border:1px dashed #dbe2ea;border-radius:10px}'''
+          if '.guest-audit-panel{' not in s:
+              s=s.replace('/* TOWER SUMMARY */',css+'\n/* TOWER SUMMARY */',1)
+          html='''    <div class="guest-audit-panel">\n      <div class="guest-audit-head">\n        <div class="guest-audit-title">RIWAYAT PERUBAHAN</div>\n        <div class="guest-audit-sub">Audit Tamu</div>\n      </div>\n      <div id="guestAuditList" class="guest-audit-list">Belum dimuat</div>\n    </div>\n\n'''
+          marker='    <div style="margin-top:20px;display:flex;gap:10px;">'
+          if 'id="guestAuditList"' not in s:
+              s=s.replace(marker,html+marker,1)
+          trigger="  overlay.style.display='flex';\n}"
+          replacement="  overlay.style.display='flex';\n  const auditList=document.getElementById('guestAuditList');\n  if(typeof window.loadGuestAudit==='function') window.loadGuestAudit(u.dbId,auditList);\n}"
+          if 'loadGuestAudit(u.dbId,auditList)' not in s:
+              s=s.replace(trigger,replacement,1)
+          if 'src="guest-audit.js"' not in s:
+              s=s.replace('</body>','<script src="guest-audit.js"></script>\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Add guest audit history to guest modal'
+          git push
