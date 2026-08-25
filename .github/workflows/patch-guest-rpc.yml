@@ -1,10 +1,12 @@
 name: Patch guest save RPC
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 permissions:
   contents: write
 jobs:
   patch:
+    if: ${{ !contains(github.event.head_commit.message, 'Fix guest save via RPC') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
