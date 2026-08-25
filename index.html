@@ -645,6 +645,7 @@ function applyCloudRows(rows){
   units.forEach(u=>{
     const r=byId.get(u.id);
     if(!r)return;
+    u.dbId=r.id;
     u.status=r.status||'OD';
     u.updated=r.updated_at?new Date(r.updated_at):null;
     u.updatedBy=r.updated_by||'';
@@ -781,7 +782,7 @@ function applyPermissions(){
   const role=currentProfile?.role||'';
   document.getElementById('authRoleBadge').textContent=roleLabel(role);
   const notice=document.getElementById('permissionNotice');
-  const allowed=[role]||[];
+  const allowed=ROLE_PERMISSIONS[role]||[];
   if(role==='view_only'){
     notice.style.display='block';notice.textContent='Mode View Only — Anda dapat melihat data, tetapi tidak dapat mengubah status unit.';
   }else{
@@ -798,9 +799,9 @@ async function login(){
     if(error)throw error;
     await loadProfile(data.user);
     currentSession=data.session;
+    await bootApp();
     document.body.classList.add('authenticated');
     applyPermissions();
-    await bootApp();
   }catch(err){
     console.error(err);setLoginMsg(err.message||'Login gagal.');
   }finally{btn.disabled=false;btn.textContent='Masuk';}
@@ -1009,11 +1010,18 @@ if(!canViewGuests){
   return;
 }
 
+if(!u.dbId){
+  inputs.innerHTML='<div style="padding:12px;color:#b42318;background:#fff1f0;border-radius:10px;">ID database unit belum tersedia. Muat ulang dashboard.</div>';
+  overlay.style.display='flex';
+  return;
+}
+
 inputs.innerHTML='Memuat data tamu...';
 
 const {data,error}=await supabaseClient
-  .rpc('get_room_guests',{p_unit_id:u.id});
-  const guests=data||[];
+  .rpc('get_room_guests',{p_unit_id:u.dbId});
+if(error) throw error;
+const guests=data||[];
 
   inputs.innerHTML=Array.from({length:6},(_,i)=>{
     const guest=guests.find(g=>Number(g.guest_order)===i+1);
@@ -1059,10 +1067,14 @@ async function saveGuestData(){
   const saveBtn=document.getElementById('guestSave');
 
   if(!u || !overlay || !canEditAnything()) return;
+  if(!u.dbId){
+    showToast('ID database unit belum tersedia. Muat ulang dashboard.');
+    return;
+  }
 
   const inputs=[...overlay.querySelectorAll('.guest-input')];
   const rows=inputs.map(input=>({
-    unit_id:u.id,
+    unit_id:u.dbId,
     guest_name:input.value.trim(),
     guest_order:Number(input.dataset.order)
   })).filter(row=>row.guest_name);
@@ -1104,7 +1116,6 @@ async function saveGuestData(){
     'Error tidak diketahui';
 
   showToast(`Gagal menyimpan: ${msg}`);
-}
   }finally{
     if(saveBtn){
       saveBtn.disabled=!canEditAnything();
@@ -1395,9 +1406,9 @@ async function boot(){
     if(data.session){
       currentSession=data.session;
       await loadProfile(data.session.user);
+      await bootApp();
       document.body.classList.add('authenticated');
       applyPermissions();
-      await bootApp();
     }
   }catch(err){
     console.error('Auth boot failed:',err);
