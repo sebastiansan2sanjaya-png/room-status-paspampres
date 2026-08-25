@@ -764,7 +764,12 @@ function roleLabel(role){
 }
 function canEditStatus(code){return !!(currentProfile && (ROLE_PERMISSIONS[currentProfile.role]||[]).includes(code));}
 function canEditAnything(){return !!(currentProfile && (ROLE_PERMISSIONS[currentProfile.role]||[]).length);}
-function setLoginMsg(msg=''){document.getElementById('loginMsg').textContent=msg;}
+
+  function isGuestManager(){
+  return currentProfile?.role === 'receptionist' ||
+         currentProfile?.role === 'editor';
+}
+  function setLoginMsg(msg=''){document.getElementById('loginMsg').textContent=msg;}
 async function loadProfile(user){
   // user_profiles is expected to link its id to auth.users.id.
   const {data,error}=await supabaseClient.from('user_profiles').select('username,role').eq('id',user.id).maybeSingle();
@@ -974,22 +979,40 @@ async function openGuestSheet(u){
 
   if(!overlay || !inputs)return;
 
-  title.textContent=`UNIT ${u.number}`;
-  inputs.innerHTML='Memuat data tamu...';
+ title.textContent=`UNIT ${u.number}`;
 
-  const {data,error}=await supabaseClient
-    .from('room_guests')
-    .select('guest_name,guest_order')
-    .eq('unit_id',u.id)
-    .order('guest_order',{ascending:true});
+const canViewGuests = isGuestManager();
+if(!canViewGuests){
+  inputs.innerHTML=Array.from({length:6},(_,i)=>`
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:5px;">
+        TAMU ${i+1}
+      </div>
+      <input
+        type="text"
+        value="****"
+        disabled
+        style="width:100%;box-sizing:border-box;"
+      >
+    </div>
+  `).join('');
 
-  if(error){
-    console.error(error);
-    inputs.innerHTML='<div style="color:#dc2626;">Gagal memuat data tamu.</div>';
-    overlay.style.display='flex';
-    return;
+  const saveBtn=document.getElementById('guestSave');
+  if(saveBtn){
+    saveBtn.disabled=true;
+    saveBtn.textContent='Simpan Tamu';
+    saveBtn.style.opacity='.55';
+    saveBtn.style.cursor='not-allowed';
   }
 
+  overlay.style.display='flex';
+  return;
+}
+
+inputs.innerHTML='Memuat data tamu...';
+
+const {data,error}=await supabaseClient
+  .rpc('get_room_guests',{p_unit_id:u.id});
   const guests=data||[];
 
   inputs.innerHTML=Array.from({length:6},(_,i)=>{
