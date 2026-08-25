@@ -32,29 +32,40 @@
     }).join('');
   };
 
-  // Make history close respond immediately on touch/pointer, before any other handler.
-  // This avoids a slow/unresponsive close on mobile when another async UI action is active.
-  function bindFastHistoryClose(){
-    document.addEventListener('pointerdown',(e)=>{
-      const btn=e.target?.closest?.('#historyClose,.history-close');
-      if(!btn)return;
-      e.preventDefault();
-      e.stopPropagation();
-      const overlay=document.getElementById('historyOverlay');
-      if(overlay)overlay.classList.remove('show');
-    },true);
-    document.addEventListener('keydown',(e)=>{
+  // Fast mobile close handlers: respond on pointer/touch before async audit work can interfere.
+  function fastCloseGuestOverlay(e){
+    const btn=e.target?.closest?.('#guestClose,#guestCancel');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    const overlay=document.getElementById('guestOverlay');
+    if(overlay)overlay.style.display='none';
+  }
+  function fastCloseHistory(e){
+    const btn=e.target?.closest?.('#historyClose,.history-close');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    const overlay=document.getElementById('historyOverlay');
+    if(overlay)overlay.classList.remove('show');
+  }
+  function bindFastClose(){
+    document.addEventListener('pointerdown',fastCloseGuestOverlay,true);
+    document.addEventListener('pointerdown',fastCloseHistory,true);
+    document.addEventListener('keydown',e=>{
       if(e.key!=='Escape')return;
-      const overlay=document.getElementById('historyOverlay');
-      if(overlay?.classList.contains('show'))overlay.classList.remove('show');
+      const guest=document.getElementById('guestOverlay');
+      if(guest?.style.display==='flex')guest.style.display='none';
+      const history=document.getElementById('historyOverlay');
+      if(history?.classList.contains('show'))history.classList.remove('show');
     });
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastHistoryClose,{once:true});else bindFastHistoryClose();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
 
   const loadRecap=()=>{
     if(document.querySelector('script[src*="occupancy-recap.js"]'))return;
     if(document.querySelector('script[data-occupancy-recap]'))return;
-    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-5';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
+    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-6';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadRecap,{once:true});else loadRecap();
 })();
