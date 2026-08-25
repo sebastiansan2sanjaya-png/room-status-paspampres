@@ -1090,20 +1090,13 @@ async function saveGuestData(){
   }
 
   try{
-    const {error:deleteError}=await supabaseClient
-      .from('room_guests')
-      .delete()
-      .eq('unit_id',u.dbId);
+const {data:saveCount,error:saveError}=await supabaseClient
+  .rpc('save_room_guests',{
+    p_unit_id:u.dbId,
+    p_guests:rows
+  });
 
-    if(deleteError) throw deleteError;
-
-    if(rows.length){
-      const {error:insertError}=await supabaseClient
-        .from('room_guests')
-        .insert(rows);
-      if(insertError) throw insertError;
-    }
-
+if(saveError) throw saveError;
     const guestSummary=document.getElementById('guestSummary');
     if(guestSummary){
       guestSummary.textContent=rows.length ? `${rows.length} tamu terdaftar` : 'Belum ada data tamu';
