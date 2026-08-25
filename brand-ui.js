@@ -1,4 +1,4 @@
-/* Room Status — Glassmorphism Brand UI */
+/* Room Status — Glassmorphism UI / PDF Branding */
 (function(){
   if(window.__roomStatusBrandUI)return;
   window.__roomStatusBrandUI=true;
@@ -31,18 +31,6 @@
       border-bottom:1px solid rgba(255,255,255,.82);
       position:sticky;top:0;z-index:10;
     }
-    .brand{gap:10px}
-    .rs-brand-mark{
-      width:46px;height:46px;flex:0 0 46px;border-radius:15px;
-      display:grid;place-items:center;color:#263548;
-      background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(235,241,250,.62));
-      border:1px solid rgba(255,255,255,.95);
-      box-shadow:0 8px 22px rgba(35,54,84,.10),inset 0 1px 0 rgba(255,255,255,.95);
-      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    }
-    .rs-logo-svg{width:31px;height:31px;display:block}
-    .header h1{font-size:22px;letter-spacing:-.6px}
-    .header .subtitle{font-size:12px}
     .searchbar,.filters select,.card,.tower-chip,.unit,.pdf-btn{
       background:var(--glass-bg) !important;
       backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur));
@@ -58,33 +46,40 @@
     #occupancyRecapBtn{background:rgba(255,255,255,.70) !important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-color:rgba(255,255,255,.92) !important;box-shadow:0 12px 30px rgba(34,53,84,.08) !important;border-radius:16px}
     #occupancyRecapModal{background:rgba(23,34,51,.20) !important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
     #occupancyRecapModal .occ-sheet{background:rgba(255,255,255,.86) !important;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.9);box-shadow:0 -15px 50px rgba(24,38,62,.14)}
-    #occupancyRecapModal .occ-stats>div,#occupancyRecapModal .occ-search,#occupancyRecapModal .occ-tower,#occupancyRecapModal .occ-history{background:rgba(255,255,255,.58);border-color:rgba(220,227,238,.78)}
-    .rs-recap-brand{display:flex;align-items:center;gap:9px;margin-bottom:14px}
-    .rs-recap-brand .rs-brand-mark{width:36px;height:36px;flex-basis:36px;border-radius:11px}
-    .rs-recap-brand .rs-logo-svg{width:24px;height:24px}
-    .rs-recap-brand strong{font-size:10px;letter-spacing:1.1px;color:#536174}
-    @media(max-width:390px){.rs-brand-mark{width:42px;height:42px;flex-basis:42px}.header h1{font-size:20px}}
+
+    /* Logo intentionally hidden from normal application UI. */
+    .rs-brand-mark,.rs-recap-brand{display:none !important}
+
+    /* Official Room Status branding appears only in generated/printed PDF. */
+    .rs-pdf-brand{display:none}
+    .rs-pdf-brand .rs-logo-svg{width:54px;height:54px;color:#263548;display:block}
+    .rs-pdf-brand-name{font-size:16px;font-weight:800;letter-spacing:2px;color:#18212f;margin-top:4px}
+    .rs-pdf-brand-sub{font-size:9px;color:#687386;margin-top:2px}
+    @media print{
+      .rs-pdf-brand{display:flex !important;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #e2e7ee}
+      .rs-pdf-brand-copy{display:flex;flex-direction:column}
+    }
   `;
   document.head.appendChild(style);
 
-  function apply(){
-    const brand=document.querySelector('.brand');
-    if(brand && !brand.querySelector('.rs-brand-mark')){
-      const mark=document.createElement('span');
-      mark.className='rs-brand-mark';mark.innerHTML=logo;
-      brand.insertBefore(mark,brand.firstChild);
-    }
-    const recap=document.getElementById('occupancyRecapBody');
-    if(recap && !recap.querySelector('.rs-recap-brand')){
-      const head=recap.querySelector('.occ-stats');
-      if(head){
-        const b=document.createElement('div');
-        b.className='rs-recap-brand';
-        b.innerHTML=`<span class="rs-brand-mark">${logo}</span><strong>ROOM STATUS · REKAP PENGHUNI</strong>`;
-        recap.insertBefore(b,head);
-      }
-    }
+  function addPdfBrand(){
+    const area=document.querySelector('.print-area');
+    if(!area || area.querySelector('.rs-pdf-brand'))return;
+    const brand=document.createElement('div');
+    brand.className='rs-pdf-brand';
+    brand.innerHTML=`${logo}<div class="rs-pdf-brand-copy"><div class="rs-pdf-brand-name">ROOM STATUS</div><div class="rs-pdf-brand-sub">Unit Hunian Rusun Paspampres</div></div>`;
+    area.insertBefore(brand,area.firstChild);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(apply,500),{once:true});else setTimeout(apply,500);
+
+  function cleanLegacyBrand(){
+    document.querySelectorAll('.rs-brand-mark,.rs-recap-brand').forEach(el=>el.remove());
+  }
+
+  function apply(){
+    cleanLegacyBrand();
+    addPdfBrand();
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(apply,300),{once:true});else setTimeout(apply,300);
   new MutationObserver(()=>apply()).observe(document.body,{childList:true,subtree:true});
 })();
