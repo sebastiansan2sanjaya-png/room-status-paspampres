@@ -32,32 +32,39 @@
     }).join('');
   };
 
-  // Fast mobile close handlers: respond on pointer/touch before async audit work can interfere.
-  function fastCloseGuestOverlay(e){
+  // Close guest/history overlays immediately on touch, pointer, and click.
+  // The audit request may still be running in the background; it must never block closing the UI.
+  function closeGuest(){
+    const overlay=document.getElementById('guestOverlay');
+    if(overlay) overlay.style.display='none';
+  }
+  function closeHistory(){
+    const overlay=document.getElementById('historyOverlay');
+    if(overlay) overlay.classList.remove('show');
+  }
+  function handleClose(e){
     const btn=e.target?.closest?.('#guestClose,#guestCancel');
     if(!btn)return;
-    e.preventDefault();
+    if(e.type!=='click') e.preventDefault();
     e.stopPropagation();
-    const overlay=document.getElementById('guestOverlay');
-    if(overlay)overlay.style.display='none';
+    closeGuest();
   }
-  function fastCloseHistory(e){
+  function handleHistoryClose(e){
     const btn=e.target?.closest?.('#historyClose,.history-close');
     if(!btn)return;
-    e.preventDefault();
+    if(e.type!=='click') e.preventDefault();
     e.stopPropagation();
-    const overlay=document.getElementById('historyOverlay');
-    if(overlay)overlay.classList.remove('show');
+    closeHistory();
   }
   function bindFastClose(){
-    document.addEventListener('pointerdown',fastCloseGuestOverlay,true);
-    document.addEventListener('pointerdown',fastCloseHistory,true);
+    ['touchstart','pointerdown','click'].forEach(type=>{
+      document.addEventListener(type,handleClose,true);
+      document.addEventListener(type,handleHistoryClose,true);
+    });
     document.addEventListener('keydown',e=>{
       if(e.key!=='Escape')return;
-      const guest=document.getElementById('guestOverlay');
-      if(guest?.style.display==='flex')guest.style.display='none';
-      const history=document.getElementById('historyOverlay');
-      if(history?.classList.contains('show'))history.classList.remove('show');
+      closeGuest();
+      closeHistory();
     });
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
@@ -65,7 +72,7 @@
   const loadRecap=()=>{
     if(document.querySelector('script[src*="occupancy-recap.js"]'))return;
     if(document.querySelector('script[data-occupancy-recap]'))return;
-    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-6';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
+    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-7';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadRecap,{once:true});else loadRecap();
 })();
