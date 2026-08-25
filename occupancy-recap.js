@@ -62,7 +62,7 @@
     return String(document.getElementById('occGuestSearch')?.value||'').trim().toLowerCase();
   }
 
-  function renderData(d){
+  function renderData(d, focusSearch=false, cursorPos=null){
     const list=document.getElementById('occupancyRecapBody');
     if(!list)return;
     const term=searchTerm();
@@ -87,8 +87,18 @@
     if(canShowGuestNames()){
       const input=document.getElementById('occGuestSearch');
       const clear=document.getElementById('occGuestClear');
-      if(input){input.addEventListener('input',()=>renderData(lastData));}
-      if(clear){clear.addEventListener('click',()=>{if(input){input.value='';input.focus();}renderData(lastData);});}
+      if(input){
+        input.addEventListener('input',()=>{
+          const pos=input.selectionStart ?? input.value.length;
+          renderData(lastData,true,pos);
+        });
+        if(focusSearch){
+          input.focus();
+          const pos=Math.min(cursorPos ?? input.value.length,input.value.length);
+          try{input.setSelectionRange(pos,pos);}catch(e){}
+        }
+      }
+      if(clear){clear.addEventListener('click',()=>{renderData(lastData,true,0);});}
     }
   }
 
