@@ -31,10 +31,30 @@
       return `<div class="guest-audit-item"><div class="guest-audit-top"><span class="guest-audit-action ${action.toLowerCase()}">${esc(action)}</span><span class="guest-audit-time">${fmt(r.changed_at)}</span></div><div class="guest-audit-detail">${detail}</div><div class="guest-audit-by">Oleh <strong>${esc(r.changed_by||'—')}</strong> · Tamu ${Number(r.guest_order)||'—'}</div></div>`;
     }).join('');
   };
+
+  // Make history close respond immediately on touch/pointer, before any other handler.
+  // This avoids a slow/unresponsive close on mobile when another async UI action is active.
+  function bindFastHistoryClose(){
+    document.addEventListener('pointerdown',(e)=>{
+      const btn=e.target?.closest?.('#historyClose,.history-close');
+      if(!btn)return;
+      e.preventDefault();
+      e.stopPropagation();
+      const overlay=document.getElementById('historyOverlay');
+      if(overlay)overlay.classList.remove('show');
+    },true);
+    document.addEventListener('keydown',(e)=>{
+      if(e.key!=='Escape')return;
+      const overlay=document.getElementById('historyOverlay');
+      if(overlay?.classList.contains('show'))overlay.classList.remove('show');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastHistoryClose,{once:true});else bindFastHistoryClose();
+
   const loadRecap=()=>{
     if(document.querySelector('script[src*="occupancy-recap.js"]'))return;
     if(document.querySelector('script[data-occupancy-recap]'))return;
-    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-4';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
+    const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-5';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadRecap,{once:true});else loadRecap();
 })();
