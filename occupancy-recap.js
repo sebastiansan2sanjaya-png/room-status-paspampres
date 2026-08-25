@@ -62,43 +62,46 @@
     return String(document.getElementById('occGuestSearch')?.value||'').trim().toLowerCase();
   }
 
-  function renderData(d, focusSearch=false, cursorPos=null){
-    const list=document.getElementById('occupancyRecapBody');
-    if(!list)return;
-    const term=searchTerm();
+  function renderTowers(d,term=''){
+    const target=document.getElementById('occTowerList');
+    if(!target)return;
     const towers=Object.keys(d.tower).sort((a,b)=>Number(a)-Number(b));
     const filtered=[];
     towers.forEach(t=>{
       const x=d.tower[t];
-      const rows=x.rows.filter(r=>!term || (canShowGuestNames() && r.names.some(n=>String(n).toLowerCase().includes(term))));
-      if(rows.length) filtered.push({t,x,rows});
+      const rows=x.rows.filter(r=>!term || r.names.some(n=>String(n).toLowerCase().includes(term)));
+      if(rows.length) filtered.push({t,rows});
     });
 
+    target.innerHTML=filtered.length
+      ? filtered.map(({t,rows})=>`<details class="occ-tower" ${term?'open':''}><summary><strong>TOWER ${esc(String(t).padStart(2,'0'))}</strong><span>${rows.length} Unit · ${rows.reduce((s,r)=>s+r.pax,0)} Pax</span></summary><div>${rows.map(r=>`<div class="occ-unit"><div><strong>T${esc(String(r.tower).padStart(2,'0'))}-${esc(r.unit_number)}</strong><span>${r.pax} Pax</span></div><small>${displayGuestNames(r.names)}</small></div>`).join('')}</div></details>`).join('')
+      : `<div style="padding:25px;text-align:center;color:#687386">${term?'Nama penghuni tidak ditemukan.':'Belum ada data penghuni.'}</div>`;
+  }
+
+  function renderData(d){
+    const list=document.getElementById('occupancyRecapBody');
+    if(!list)return;
+
     const searchHtml=canShowGuestNames()
-      ? `<div class="occ-search"><span>⌕</span><input id="occGuestSearch" type="search" autocomplete="off" placeholder="Cari nama penghuni..." value="${esc(term)}"><button id="occGuestClear" type="button" aria-label="Hapus pencarian">×</button></div>`
+      ? `<div class="occ-search"><span>⌕</span><input id="occGuestSearch" type="search" autocomplete="off" placeholder="Cari nama penghuni..."><button id="occGuestClear" type="button" aria-label="Hapus pencarian">×</button></div>`
       : '';
 
-    const towerHtml=filtered.length
-      ? filtered.map(({t,x,rows})=>`<details class="occ-tower" ${term?'open':''}><summary><strong>TOWER ${esc(String(t).padStart(2,'0'))}</strong><span>${rows.length} Unit · ${rows.reduce((s,r)=>s+r.pax,0)} Pax</span></summary><div>${rows.map(r=>`<div class="occ-unit"><div><strong>T${esc(String(r.tower).padStart(2,'0'))}-${esc(r.unit_number)}</strong><span>${r.pax} Pax</span></div><small>${displayGuestNames(r.names)}</small></div>`).join('')}</div></details>`).join('')
-      : `<div style="padding:25px;text-align:center;color:#687386">${term?'Nama penghuni tidak ditemukan.':'Belum ada data penghuni.'}</div>`;
-
-    list.innerHTML=`<div class="occ-stats"><div><b>${d.totalUnits}</b><span>UNIT TERHUNI</span></div><div><b>${d.totalPax}</b><span>PAX TERHUNI</span></div></div>${searchHtml}<div class="occ-title">REKAP PER TOWER</div>${towerHtml}`;
+    list.innerHTML=`<div class="occ-stats"><div><b>${d.totalUnits}</b><span>UNIT TERHUNI</span></div><div><b>${d.totalPax}</b><span>PAX TERHUNI</span></div></div>${searchHtml}<div class="occ-title">REKAP PER TOWER</div><div id="occTowerList"></div>`;
+    renderTowers(d,'');
 
     if(canShowGuestNames()){
       const input=document.getElementById('occGuestSearch');
       const clear=document.getElementById('occGuestClear');
       if(input){
-        input.addEventListener('input',()=>{
-          const pos=input.selectionStart ?? input.value.length;
-          renderData(lastData,true,pos);
-        });
-        if(focusSearch){
-          input.focus();
-          const pos=Math.min(cursorPos ?? input.value.length,input.value.length);
-          try{input.setSelectionRange(pos,pos);}catch(e){}
-        }
+        input.addEventListener('input',()=>renderTowers(lastData,searchTerm()));
       }
-      if(clear){clear.addEventListener('click',()=>{renderData(lastData,true,0);});}
+      if(clear){
+        clear.addEventListener('click',()=>{
+          input.value='';
+          renderTowers(lastData,'');
+          input.focus();
+        });
+      }
     }
   }
 
