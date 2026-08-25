@@ -32,41 +32,11 @@
     }).join('');
   };
 
-  // Close guest/history overlays immediately on touch, pointer, and click.
-  // The audit request may still be running in the background; it must never block closing the UI.
-  function closeGuest(){
-    const overlay=document.getElementById('guestOverlay');
-    if(overlay) overlay.style.display='none';
-  }
-  function closeHistory(){
-    const overlay=document.getElementById('historyOverlay');
-    if(overlay) overlay.classList.remove('show');
-  }
-  function handleClose(e){
-    const btn=e.target?.closest?.('#guestClose,#guestCancel');
-    if(!btn)return;
-    if(e.type!=='click') e.preventDefault();
-    e.stopPropagation();
-    closeGuest();
-  }
-  function handleHistoryClose(e){
-    const btn=e.target?.closest?.('#historyClose,.history-close');
-    if(!btn)return;
-    if(e.type!=='click') e.preventDefault();
-    e.stopPropagation();
-    closeHistory();
-  }
-  function bindFastClose(){
-    ['touchstart','pointerdown','click'].forEach(type=>{
-      document.addEventListener(type,handleClose,true);
-      document.addEventListener(type,handleHistoryClose,true);
-    });
-    document.addEventListener('keydown',e=>{
-      if(e.key!=='Escape')return;
-      closeGuest();
-      closeHistory();
-    });
-  }
+  function closeGuest(){const overlay=document.getElementById('guestOverlay');if(overlay)overlay.style.display='none';}
+  function closeHistory(){const overlay=document.getElementById('historyOverlay');if(overlay)overlay.classList.remove('show');}
+  function handleClose(e){const btn=e.target?.closest?.('#guestClose,#guestCancel');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeGuest();}
+  function handleHistoryClose(e){const btn=e.target?.closest?.('#historyClose,.history-close');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeHistory();}
+  function bindFastClose(){['touchstart','pointerdown','click'].forEach(type=>{document.addEventListener(type,handleClose,true);document.addEventListener(type,handleHistoryClose,true);});document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;closeGuest();closeHistory();});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
 
   const loadRecap=()=>{
@@ -74,5 +44,9 @@
     if(document.querySelector('script[data-occupancy-recap]'))return;
     const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-7';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadRecap,{once:true});else loadRecap();
+  const loadBrand=()=>{
+    if(document.querySelector('script[src*="brand-ui.js"]'))return;
+    const s=document.createElement('script');s.src='brand-ui.js?v=20260826-1';s.defer=true;document.head.appendChild(s);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();},{once:true});else{loadRecap();loadBrand();}
 })();
