@@ -1020,7 +1020,12 @@ inputs.innerHTML='Memuat data tamu...';
 
 const {data,error}=await supabaseClient
   .rpc('get_room_guests',{p_unit_id:u.dbId});
-if(error) throw error;
+if(error){
+  console.error('Guest load failed:', error);
+  inputs.innerHTML=`<div style="padding:12px;color:#b42318;background:#fff1f0;border-radius:10px;">Gagal memuat data tamu: ${error.message||'Error tidak diketahui'}</div>`;
+  overlay.style.display='flex';
+  return;
+}
 const guests=data||[];
 
   inputs.innerHTML=Array.from({length:6},(_,i)=>{
@@ -1088,7 +1093,7 @@ async function saveGuestData(){
     const {error:deleteError}=await supabaseClient
       .from('room_guests')
       .delete()
-      .eq('unit_id',u.id);
+      .eq('unit_id',u.dbId);
 
     if(deleteError) throw deleteError;
 
@@ -1105,7 +1110,7 @@ async function saveGuestData(){
     }
 
     closeGuestSheet();
-    showToast(rows.length ? `${rows.length} data tamu tersimpan` : 'Data tamu dikosongkan');
+    showToast(rows.length ? `${rows.length} data tamu UNIT ${u.number} tersimpan` : `Data tamu UNIT ${u.number} dikosongkan`);
 }catch(error){
   console.error('Guest save failed:', error);
 
