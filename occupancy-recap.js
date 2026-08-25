@@ -1,7 +1,7 @@
 /* Rekap Data Tamu & Pax Terhuni — OD + guest name only */
 (function(){
   const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  let units=[], guests=[];
+  let units=[], guests=[], currentRole='';
 
   async function load(){
     if(typeof supabaseClient==='undefined') throw new Error('Koneksi Supabase belum tersedia.');
@@ -16,16 +16,23 @@
     const odIds=new Set(units.map(u=>String(u.id)));
     guests=(Array.isArray(payload.guests)?payload.guests:[])
       .filter(g=>odIds.has(String(g.unit_id)) && String(g.guest_name||'').trim());
+
+    // Read the authenticated user's role directly from user_profiles.
+    // This avoids relying on an undefined global helper.
+    currentRole='';
+    try{
+      const {data:{user}}=await supabaseClient.auth.getUser();
+      if(user?.id){
+        const {data:profile}=await supabaseClient.from('user_profiles').select('role').eq('id',user.id).maybeSingle();
+        currentRole=String(profile?.role||'').toLowerCase().trim();
+      }
+    }catch(e){ console.warn('Role lookup failed:',e); }
     return {units,guests};
   }
 
   function build(){
     const byUnit={};
     guests.forEach(g=>(byUnit[g.unit_id]??=[]).push(g));
-
-    // Rekap penghuni hanya memasukkan unit yang:
-    // 1) berstatus OD, DAN
-    // 2) memiliki minimal satu nama tamu terisi.
     const occupiedUnits=units.filter(u=>(byUnit[u.id]||[]).length>0);
     const tower={};
     occupiedUnits.forEach(u=>{
@@ -44,8 +51,7 @@
   }
 
   function canShowGuestNames(){
-    // Only Editor and Resepsionis may see actual guest names in this recap.
-    return typeof isGuestManager==='function' && isGuestManager();
+    return currentRole==='editor' || currentRole==='receptionist';
   }
 
   function displayGuestNames(names){
