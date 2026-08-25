@@ -1010,8 +1010,98 @@ async function openGuestSheet(u){
     `;
   }).join('');
 
+  const guestCount=guests.filter(g=>String(g.guest_name||'').trim()).length;
+  const guestSummary=document.getElementById('guestSummary');
+  if(guestSummary){
+    guestSummary.textContent=guestCount ? `${guestCount} tamu terdaftar` : 'Belum ada data tamu';
+  }
+
+  const saveBtn=document.getElementById('guestSave');
+  if(saveBtn){
+    saveBtn.disabled=!canEditAnything();
+    saveBtn.style.opacity=canEditAnything()?'1':'.55';
+    saveBtn.style.cursor=canEditAnything()?'pointer':'not-allowed';
+  }
+
   overlay.style.display='flex';
-}function openSheet(id){
+}
+function closeGuestSheet(){
+  const overlay=document.getElementById('guestOverlay');
+  if(overlay) overlay.style.display='none';
+}
+
+async function saveGuestData(){
+  const u=units.find(x=>x.id===editingId);
+  const overlay=document.getElementById('guestOverlay');
+  const saveBtn=document.getElementById('guestSave');
+
+  if(!u || !overlay || !canEditAnything()) return;
+
+  const inputs=[...overlay.querySelectorAll('.guest-input')];
+  const rows=inputs.map(input=>({
+    unit_id:u.id,
+    guest_name:input.value.trim(),
+    guest_order:Number(input.dataset.order)
+  })).filter(row=>row.guest_name);
+
+  if(saveBtn){
+    saveBtn.disabled=true;
+    saveBtn.textContent='Menyimpan...';
+  }
+
+  try{
+    const {error:deleteError}=await supabaseClient
+      .from('room_guests')
+      .delete()
+      .eq('unit_id',u.id);
+
+    if(deleteError) throw deleteError;
+
+    if(rows.length){
+      const {error:insertError}=await supabaseClient
+        .from('room_guests')
+        .insert(rows);
+      if(insertError) throw insertError;
+    }
+
+    const guestSummary=document.getElementById('guestSummary');
+    if(guestSummary){
+      guestSummary.textContent=rows.length ? `${rows.length} tamu terdaftar` : 'Belum ada data tamu';
+    }
+
+    closeGuestSheet();
+    showToast(rows.length ? `${rows.length} data tamu tersimpan` : 'Data tamu dikosongkan');
+  }catch(error){
+    console.error('Guest save failed:',error);
+    showToast('Gagal menyimpan data tamu');
+  }finally{
+    if(saveBtn){
+      saveBtn.disabled=!canEditAnything();
+      saveBtn.textContent='Simpan Tamu';
+      saveBtn.style.opacity=canEditAnything()?'1':'.55';
+      saveBtn.style.cursor=canEditAnything()?'pointer':'not-allowed';
+    }
+  }
+}
+
+function bindGuestSheet(){
+  const overlay=document.getElementById('guestOverlay');
+  const closeBtn=document.getElementById('guestClose');
+  const cancelBtn=document.getElementById('guestCancel');
+  const saveBtn=document.getElementById('guestSave');
+
+  if(closeBtn) closeBtn.onclick=closeGuestSheet;
+  if(cancelBtn) cancelBtn.onclick=closeGuestSheet;
+  if(saveBtn) saveBtn.onclick=saveGuestData;
+
+  if(overlay){
+    overlay.onclick=e=>{
+      if(e.target===overlay) closeGuestSheet();
+    };
+  }
+}
+
+function openSheet(id){
  const u=units.find(x=>x.id===id); if(!u)return;
  editingId=id;pendingStatus=u.status;
  document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;
@@ -1097,6 +1187,7 @@ document.getElementById('close').onclick=closeSheet;
 document.getElementById('cancel').onclick=closeSheet;
 document.getElementById('save').onclick=save;
 document.getElementById('historyBtn').onclick=()=>openHistory(editingId);document.getElementById('historyClose').onclick=closeHistory;document.getElementById('historyOverlay').onclick=e=>{if(e.target.id==='historyOverlay')closeHistory()};
+bindGuestSheet();
 
 function openSummary(){
   const c=counts(), total=units.length;
