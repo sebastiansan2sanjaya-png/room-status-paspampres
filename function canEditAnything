@@ -781,7 +781,7 @@ function applyPermissions(){
   const role=currentProfile?.role||'';
   document.getElementById('authRoleBadge').textContent=roleLabel(role);
   const notice=document.getElementById('permissionNotice');
-  const allowed=ROLE_PERMISSIONS[role]||[];
+  const allowed=[role]||[];
   if(role==='view_only'){
     notice.style.display='block';notice.textContent='Mode View Only — Anda dapat melihat data, tetapi tidak dapat mengubah status unit.';
   }else{
@@ -1094,9 +1094,17 @@ async function saveGuestData(){
 
     closeGuestSheet();
     showToast(rows.length ? `${rows.length} data tamu tersimpan` : 'Data tamu dikosongkan');
-  }catch(error){
-    console.error('Guest save failed:',error);
-    showToast('Gagal menyimpan data tamu');
+}catch(error){
+  console.error('Guest save failed:', error);
+
+  const msg =
+    error?.message ||
+    error?.details ||
+    error?.hint ||
+    'Error tidak diketahui';
+
+  showToast(`Gagal menyimpan: ${msg}`);
+}
   }finally{
     if(saveBtn){
       saveBtn.disabled=!canEditAnything();
