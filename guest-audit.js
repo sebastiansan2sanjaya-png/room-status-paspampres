@@ -3,9 +3,11 @@
   const esc=(v)=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const fmt=(v)=>{const d=new Date(v);return isNaN(d)?'—':d.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
   window.loadGuestAudit=async function(unitId,target){
-    if(!window.supabaseClient||!unitId||!target)return;
+    if(!unitId||!target)return;
+    const client=(typeof supabaseClient!=='undefined')?supabaseClient:window.supabaseClient;
+    if(!client){target.innerHTML='<div class="guest-audit-empty">Koneksi database belum siap.</div>';return;}
     target.innerHTML='<div class="guest-audit-loading">Memuat riwayat...</div>';
-    const {data,error}=await window.supabaseClient.from('room_guest_audit').select('changed_at,guest_order,old_guest_name,new_guest_name,action,changed_by').eq('unit_id',unitId).order('changed_at',{ascending:false}).order('guest_order',{ascending:true}).limit(100);
+    const {data,error}=await client.from('room_guest_audit').select('changed_at,guest_order,old_guest_name,new_guest_name,action,changed_by').eq('unit_id',unitId).order('changed_at',{ascending:false}).order('guest_order',{ascending:true}).limit(100);
     if(error){target.innerHTML='<div class="guest-audit-empty">Riwayat belum dapat dimuat.</div>';console.error('Guest audit load failed:',error);return;}
     if(!data?.length){target.innerHTML='<div class="guest-audit-empty">Belum ada riwayat perubahan.</div>';return;}
     target.innerHTML=data.map(r=>{
