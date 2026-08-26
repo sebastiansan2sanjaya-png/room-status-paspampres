@@ -48,5 +48,10 @@
     if(document.querySelector('script[src*="brand-ui.js"]'))return;
     const s=document.createElement('script');s.src='brand-ui.js?v=20260826-1';s.defer=true;document.head.appendChild(s);
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();},{once:true});else{loadRecap();loadBrand();}
+  const loadConditionDetail=()=>{
+    if(window.__conditionDetailLoaded)return;
+    if(document.querySelector('script[src*="condition-detail.js"]'))return;
+    const s=document.createElement('script');s.src='condition-detail.js?v=20260826-2';s.dataset.conditionDetail='1';s.defer=true;document.head.appendChild(s);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();loadConditionDetail();},{once:true});else{loadRecap();loadBrand();loadConditionDetail();}
 })();
