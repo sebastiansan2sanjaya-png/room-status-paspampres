@@ -2,8 +2,10 @@
   if(window.__conditionDetailLoaded) return;
   window.__conditionDetailLoaded=true;
   function getClient(){try{return typeof supabaseClient!=='undefined'?supabaseClient:null;}catch(e){return null;}}
+  function isReception(){const t=(document.body.innerText||'').toLowerCase();return t.includes('resepsionis');}
   function unitContext(){const title=document.getElementById('sheetTitle')?.textContent||'';const sub=document.getElementById('sheetSub')?.textContent||'';const um=title.match(/UNIT\s+(.+)/i);const tm=sub.match(/Tower\s*0*(\d+)/i);if(!um||!tm)return null;return {unit:um[1].trim(),tower:Number(tm[1])};}
   async function loadReport(){
+    if(!isReception())return;
     const ctx=unitContext();
     const client=getClient();
     if(!ctx||!client)return;
@@ -20,7 +22,7 @@
     box.className='condition-detail-box';
     const d=new Date(report.reported_at);
     const time=isNaN(d)?report.reported_at:d.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
-    box.innerHTML=`<div class="condition-detail-head"><span>RINCIAN KONDISI</span><b class="condition-badge ${report.status==='OO'?'oo':'os'}">${esc(report.status)}</b></div><div class="condition-field"><span>REASON</span><strong>${esc(report.reason)}</strong></div><div class="condition-field"><span>NOTE</span><p>${esc(report.note)}</p></div><div class="condition-detail-meta">Dilaporkan ${esc(time)} · Status laporan: <b>${esc(report.resolution_status)}</b></div>`;
+    box.innerHTML=`<div class="condition-detail-head"><span>RINCIAN KONDISI</span><b class="condition-badge ${report.status==='OO'?'oo':'os'}">${esc(report.status)}</b></div><div class="condition-field"><span>REASON</span><strong>${esc(report.reason)}</strong></div><div class="condition-field"><span>NOTE</span><p>${esc(report.note)}</p></div><div class="condition-detail-meta">Dilaporkan ${esc(time)}</div>`;
     anchor.parentNode.insertBefore(box,anchor);
   }
   function esc(v){return String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));}
