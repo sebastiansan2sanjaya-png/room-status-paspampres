@@ -40,23 +40,31 @@
     const overlay=document.querySelector('.overlay');
     if(overlay){overlay.classList.remove('show');overlay.style.display='none';}
     document.body.style.overflow='';
+    document.getElementById('conditionDetailBox')?.remove();
   }
-  function handleClose(e){const btn=e.target?.closest?.('#guestClose,#guestCancel');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeGuest();}
-  function handleHistoryClose(e){const btn=e.target?.closest?.('#historyClose,.history-close');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeHistory();}
+  function cleanupDuplicateCondition(){
+    const boxes=[...document.querySelectorAll('.condition-detail-box')];
+    if(boxes.length>1)boxes.slice(0,-1).forEach(x=>x.remove());
+  }
+  function handleClose(e){const btn=e.target?.closest?.('#guestClose,#guestCancel');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();closeGuest();}
+  function handleHistoryClose(e){const btn=e.target?.closest?.('#historyClose,.history-close');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();closeHistory();}
   function handleRoomSheetClose(e){
     const btn=e.target?.closest?.('.sheet .close');
     if(!btn)return;
     e.preventDefault();
-    e.stopPropagation();
+    e.stopImmediatePropagation();
     closeRoomSheet();
   }
   function bindFastClose(){
-    ['touchstart','pointerdown','click'].forEach(type=>{
+    ['pointerdown','touchstart','pointerup','touchend','click'].forEach(type=>{
       document.addEventListener(type,handleClose,true);
       document.addEventListener(type,handleHistoryClose,true);
       document.addEventListener(type,handleRoomSheetClose,true);
     });
     document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;closeGuest();closeHistory();closeRoomSheet();});
+    const observer=new MutationObserver(cleanupDuplicateCondition);
+    observer.observe(document.body,{childList:true,subtree:true});
+    cleanupDuplicateCondition();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
 
