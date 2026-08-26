@@ -34,9 +34,30 @@
 
   function closeGuest(){const overlay=document.getElementById('guestOverlay');if(overlay)overlay.style.display='none';}
   function closeHistory(){const overlay=document.getElementById('historyOverlay');if(overlay)overlay.classList.remove('show');}
+  function closeRoomSheet(){
+    const sheet=document.querySelector('.sheet');
+    if(sheet){sheet.style.display='none';sheet.classList.remove('show');}
+    const overlay=document.querySelector('.overlay');
+    if(overlay){overlay.classList.remove('show');overlay.style.display='none';}
+    document.body.style.overflow='';
+  }
   function handleClose(e){const btn=e.target?.closest?.('#guestClose,#guestCancel');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeGuest();}
   function handleHistoryClose(e){const btn=e.target?.closest?.('#historyClose,.history-close');if(!btn)return;if(e.type!=='click')e.preventDefault();e.stopPropagation();closeHistory();}
-  function bindFastClose(){['touchstart','pointerdown','click'].forEach(type=>{document.addEventListener(type,handleClose,true);document.addEventListener(type,handleHistoryClose,true);});document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;closeGuest();closeHistory();});}
+  function handleRoomSheetClose(e){
+    const btn=e.target?.closest?.('.sheet .close');
+    if(!btn)return;
+    e.preventDefault();
+    e.stopPropagation();
+    closeRoomSheet();
+  }
+  function bindFastClose(){
+    ['touchstart','pointerdown','click'].forEach(type=>{
+      document.addEventListener(type,handleClose,true);
+      document.addEventListener(type,handleHistoryClose,true);
+      document.addEventListener(type,handleRoomSheetClose,true);
+    });
+    document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;closeGuest();closeHistory();closeRoomSheet();});
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
 
   const loadRecap=()=>{
@@ -48,10 +69,11 @@
     if(document.querySelector('script[src*="brand-ui.js"]'))return;
     const s=document.createElement('script');s.src='brand-ui.js?v=20260826-1';s.defer=true;document.head.appendChild(s);
   };
-  const loadConditionDetail=()=>{
-    if(window.__conditionDetailLoaded)return;
-    if(document.querySelector('script[src*="condition-detail.js"]'))return;
-    const s=document.createElement('script');s.src='condition-detail.js?v=20260826-2';s.dataset.conditionDetail='1';s.defer=true;document.head.appendChild(s);
-  };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();loadConditionDetail();},{once:true});else{loadRecap();loadBrand();loadConditionDetail();}
+
+  /* condition-detail.js is intentionally NOT loaded here.
+     The native unit modal already renders Rincian Kondisi; loading this module
+     created a duplicate detail card and interfered with the mobile close UX. */
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();},{once:true});
+  else{loadRecap();loadBrand();}
 })();
