@@ -768,6 +768,11 @@ const ROLE_PERMISSIONS={
   supervisor_hk:['VC','VR','OS','OO'],
   view_only:[]
 };
+
+const RECEPTIONIST_HIDDEN_STATUSES=['OS','OO'];
+function isReceptionist(){return currentProfile?.role==='receptionist';}
+function isRestrictedReceptionistStatus(code){return isReceptionist() && RECEPTIONIST_HIDDEN_STATUSES.includes(code);}
+function visibleStatuses(){return Object.entries(STATUS).filter(([code])=>!isRestrictedReceptionistStatus(code));}
 let currentSession=null,currentProfile=null;
 function roleLabel(role){
   return ({editor:'Editor',receptionist:'Resepsionis',housekeeping:'Housekeeping',supervisor_fo:'Supervisor FO',supervisor_hk:'Supervisor HK',view_only:'View Only'})[role]||role||'—';
@@ -825,7 +830,7 @@ async function logout(){
 
 const towerFilter=document.getElementById('towerFilter'), statusFilter=document.getElementById('statusFilter');
 towers.forEach(t=>towerFilter.insertAdjacentHTML('beforeend',`<option value="${t}">Tower ${t.slice(1)}</option>`));
-Object.entries(STATUS).forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value="${code}">${code} — ${s.name}</option>`));
+visibleStatuses().forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value="${code}">${code} — ${s.name}</option>`));
 
 function counts(){
  const c={VR:0,VC:0,VD:0,OS:0,OO:0,OD:0};
@@ -846,7 +851,7 @@ function renderSystemLastUpdate(){
 function renderSummary(){
  const c=counts(), total=units.length;
  document.getElementById('totalUnits').textContent=total;
- document.getElementById('statusGrid').innerHTML=Object.entries(STATUS).map(([code,s])=>`
+ document.getElementById('statusGrid').innerHTML=visibleStatuses().map(([code,s])=>`
    <div class="status-card ${s.cls}" data-status="${code}" role="button" tabindex="0" aria-label="Tampilkan semua unit ${s.name}">
     <div class="status-icon">${code==='OD'?'●':code==='OO'?'!':code==='OS'?'⌕':code==='VD'?'✦':code==='VC'?'✦':'✓'}</div>
     <div class="status-code">${code}</div><div class="status-name">${s.name}</div>
@@ -891,7 +896,7 @@ function renderTowerSummary(){
        <div class="tower-summary-total">${list.length} Unit</div>
      </div>
      <div class="tower-mini-bars">
-       ${Object.entries(STATUS).map(([code,s])=>{
+       ${visibleStatuses().map(([code,s])=>{
          const pct=list.length?cc[code]/list.length*100:0;
          return `<div class="tower-mini-row">
            <div class="tower-mini-code" style="color:${s.color}">${code}</div>
@@ -1157,8 +1162,19 @@ function openSheet(id){
  editingId=id;pendingStatus=u.status;
  document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;
  document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;
- document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';
- renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';
+ document.getElementById('lastUpdate').textContent=formatDate(u.updated);
+ document.getElementById('updatedBy').value=u.updatedBy||'';
+ const restricted=isRestrictedReceptionistStatus(u.status);
+ const statusSection=document.getElementById('statusOptions')?.closest('.sheet-section');
+ const metaSection=document.getElementById('updatedBy')?.closest('.meta');
+ const actions=document.querySelector('.actions');
+ if(statusSection)statusSection.classList.toggle('hidden',restricted);
+ if(metaSection)metaSection.classList.toggle('hidden',restricted);
+ if(actions)actions.classList.toggle('hidden',restricted);
+ renderSheetStatus(u);
+ if(!restricted){renderOptions();renderGuestSection(u);}else{const guestSection=document.getElementById('guestSection');if(guestSection)guestSection.classList.add('hidden');}
+ document.getElementById('overlay').classList.add('show');
+ document.getElementById('sheet').style.display='block';
 }
 function renderSheetStatus(u){
  const s=STATUS[u.status];
@@ -1268,8 +1284,8 @@ document.getElementById('summaryOverlay').onclick=closeSummary;
 function buildPrintPDF(){
   const data=filtered(), area=document.getElementById('printArea'), c=counts(), now=new Date();
   const towerFilterText=towerFilter.value==='ALL'?'Semua Tower':`Tower ${towerFilter.value.slice(1)}`;
-  const statusFilterText=statusFilter.value==='ALL'?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;
-  const order=['OD','VR','VC','VD','OS','OO'];
+  const statusFilterText=(statusFilter.value==='ALL'||isRestrictedReceptionistStatus(statusFilter.value))?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;
+  const order=(isReceptionist()?['OD','VR','VC','VD']:['OD','VR','VC','VD','OS','OO']);
   const maxPct=Math.max(...order.map(code=>c[code]/units.length*100));
 
   // Reliable SVG donut.
