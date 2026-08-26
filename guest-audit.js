@@ -1,4 +1,4 @@
-/* Guest Audit Trail UI — Room Status Paspampres */
+/* Guest Audit Trail UI — Room Status Paspampres — mobile close fix v20260826-1215 */
 (function(){
   const esc=(v)=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   const fmt=(v)=>{const d=new Date(v);return isNaN(d)?'—':d.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
