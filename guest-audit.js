@@ -1,4 +1,4 @@
-/* Guest Audit Trail UI — Room Status Paspampres — mobile close fix v20260826-1215 */
+/* Guest Audit Trail UI — Room Status Paspampres — mobile close fix v20260826-1255 */
 (function(){
   const esc=(v)=>String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   const fmt=(v)=>{const d=new Date(v);return isNaN(d)?'—':d.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});};
@@ -15,7 +15,6 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindFastClose,{once:true});else bindFastClose();
   const loadRecap=()=>{if(document.querySelector('script[src*="occupancy-recap.js"]'))return;if(document.querySelector('script[data-occupancy-recap]'))return;const s=document.createElement('script');s.src='occupancy-recap.js?v=20260825-7';s.dataset.occupancyRecap='1';s.defer=true;document.head.appendChild(s);};
   const loadBrand=()=>{if(document.querySelector('script[src*="brand-ui.js"]'))return;const s=document.createElement('script');s.src='brand-ui.js?v=20260826-1';s.defer=true;document.head.appendChild(s);};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();},{once:true});else{loadRecap();loadBrand();}
-  const loadMobileFix=()=>{if(document.querySelector('script[src*="mobile-modal-fix.js"]'))return;const s=document.createElement('script');s.src='mobile-modal-fix.js?v=20260826-3';s.dataset.mobileModalFix='1';s.defer=false;document.head.appendChild(s);};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadMobileFix,{once:true});else loadMobileFix();
+  const loadMobileFix=()=>{if(document.querySelector('script[src*="mobile-modal-fix.js"]'))return;const s=document.createElement('script');s.src='mobile-modal-fix.js?v=20260826-4';s.dataset.mobileModalFix='1';s.defer=false;document.head.appendChild(s);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadRecap();loadBrand();loadMobileFix();},{once:true});else{loadRecap();loadBrand();loadMobileFix();}
 })();
