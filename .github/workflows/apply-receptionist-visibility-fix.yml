@@ -1,0 +1,39 @@
+name: Apply receptionist OS-OO visibility fix
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-receptionist-visibility-fix.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("const ROLE_PERMISSIONS={\n  editor:['OD'],\n  receptionist:['OD'],\n  housekeeping:['VC','VD','OS','OO'],\n  supervisor_fo:['OD'],\n  supervisor_hk:['VC','VR','OS','OO'],\n  view_only:[]\n};", "const ROLE_PERMISSIONS={\n  editor:['OD'],\n  receptionist:['OD'],\n  housekeeping:['VC','VD','OS','OO'],\n  supervisor_fo:['OD'],\n  supervisor_hk:['VC','VR','OS','OO'],\n  view_only:[]\n};\n\nconst RECEPTIONIST_HIDDEN_STATUSES=['OS','OO'];\nfunction isReceptionist(){return currentProfile?.role==='receptionist';}\nfunction isRestrictedReceptionistStatus(code){return isReceptionist() && RECEPTIONIST_HIDDEN_STATUSES.includes(code);}\nfunction visibleStatuses(){return Object.entries(STATUS).filter(([code])=>!isRestrictedReceptionistStatus(code));}")
+          s=s.replace("Object.entries(STATUS).forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));", "visibleStatuses().forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));")
+          s=s.replace("document.getElementById('statusGrid').innerHTML=Object.entries(STATUS).map(([code,s])=>`", "document.getElementById('statusGrid').innerHTML=visibleStatuses().map(([code,s])=>`")
+          s=s.replace("       ${Object.entries(STATUS).map(([code,s])=>{", "       ${visibleStatuses().map(([code,s])=>{")
+          s=s.replace("function filtered(){\n  const q=document.getElementById('search').value.trim().toLowerCase();\n  const tf=towerFilter.value,sf=statusFilter.value;\n  return units.filter(u=>(tf==='ALL'||u.tower===tf)&&(sf==='ALL'||u.status===sf)&&(!q||u.number.toLowerCase().includes(q)||u.tower.toLowerCase().includes(q)));\n}", "function filtered(){\n  const q=document.getElementById('search').value.trim().toLowerCase();\n  const tf=towerFilter.value;\n  const sf=isReceptionist() && RECEPTIONIST_HIDDEN_STATUSES.includes(statusFilter.value) ? 'ALL' : statusFilter.value;\n  return units.filter(u=>(tf==='ALL'||u.tower===tf)&&(sf==='ALL'||u.status===sf)&&(!q||u.number.toLowerCase().includes(q)||u.tower.toLowerCase().includes(q)));\n}")
+          s=s.replace("  const statusFilterText=statusFilter.value==='ALL'?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;", "  const statusFilterText=(statusFilter.value==='ALL'||isRestrictedReceptionistStatus(statusFilter.value))?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;")
+          s=s.replace("  const order=['OD','VR','VC','VD','OS','OO'];", "  const order=(isReceptionist()?['OD','VR','VC','VD']:['OD','VR','VC','VD','OS','OO']);")
+          old="""function openSheet(id){\n const u=units.find(x=>x.id===id); if(!u)return;\n editingId=id;pendingStatus=u.status;\n document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;\n document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;\n document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';\n renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';\n}"""
+          new="""function openSheet(id){\n const u=units.find(x=>x.id===id); if(!u)return;\n editingId=id;pendingStatus=u.status;\n document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;\n document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;\n document.getElementById('lastUpdate').textContent=formatDate(u.updated);\n document.getElementById('updatedBy').value=u.updatedBy||'';\n const restricted=isRestrictedReceptionistStatus(u.status);\n const statusSection=document.getElementById('statusOptions')?.closest('.sheet-section');\n const metaSection=document.getElementById('updatedBy')?.closest('.meta');\n const actions=document.querySelector('.actions');\n if(statusSection)statusSection.classList.toggle('hidden',restricted);\n if(metaSection)metaSection.classList.toggle('hidden',restricted);\n if(actions)actions.classList.toggle('hidden',restricted);\n renderSheetStatus(u);\n if(!restricted){renderOptions();renderGuestSection(u);}else{const guestSection=document.getElementById('guestSection');if(guestSection)guestSection.classList.add('hidden');}\n document.getElementById('overlay').classList.add('show');\n document.getElementById('sheet').style.display='block';\n}"""
+          s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Fix receptionist OS OO detail visibility'
+          git push
