@@ -18,8 +18,16 @@
   }
   async function currentUnit(){
     const client=getClient(); if(!client)throw new Error('Koneksi database belum siap. Silakan coba lagi.');
-    const title=document.getElementById('sheetTitle')?.textContent||''; const m=title.match(/UNIT\s+(.+)/i); if(!m)return null;
-    const unitNo=m[1].trim(); const {data,error}=await client.from('room_units').select('id,unit_number,tower,floor,status').eq('unit_number',unitNo).maybeSingle(); if(error)throw error; return data;
+    const title=document.getElementById('sheetTitle')?.textContent||'';
+    const sub=document.getElementById('sheetSub')?.textContent||'';
+    const m=title.match(/UNIT\s+(.+)/i);
+    const towerMatch=sub.match(/Tower\s+(\d+)/i);
+    if(!m||!towerMatch)return null;
+    const unitNo=m[1].trim();
+    const towerNo=Number(towerMatch[1]);
+    const {data,error}=await client.from('room_units').select('id,unit_number,tower,floor,status').eq('tower',towerNo).eq('unit_number',unitNo).maybeSingle();
+    if(error)throw error;
+    return data;
   }
   async function saveHKReport(e){
     if(!isHK()) return;
