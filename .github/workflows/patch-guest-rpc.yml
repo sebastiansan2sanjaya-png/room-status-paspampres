@@ -10,13 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch index.html
+      - name: Patch guest RPC and room roles
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
+
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          old = '''    const {error:deleteError}=await supabaseClient
+
+          # Guest RPC patch; tolerate an already-patched source.
+          old='''    const {error:deleteError}=await supabaseClient
       .from('room_guests')
       .delete()
       .eq('unit_id',u.dbId);
@@ -30,7 +34,7 @@ jobs:
       if(insertError) throw insertError;
     }
 '''
-          new = '''    const {data:saveCount,error:saveError}=await supabaseClient
+          new='''    const {data:saveCount,error:saveError}=await supabaseClient
       .rpc('save_room_guests',{
         p_unit_id:u.dbId,
         p_guests:rows
@@ -38,14 +42,45 @@ jobs:
 
     if(saveError) throw saveError;
 '''
-          if old not in s:
-              raise SystemExit('TARGET_NOT_FOUND')
-          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          if old in s:
+              s=s.replace(old,new,1)
+
+          # Restore OS/OO visibility for Resepsionis. Only the HK condition detail
+          # is role-restricted; the status cards, filters and counts stay visible.
+          s=re.sub(r"\nconst RECEPTIONIST_HIDDEN_STATUSES=\['OS','OO'\];.*?function visibleStatuses\(\)\{.*?\}\n", "\n", s, flags=re.S)
+          s=s.replace("visibleStatuses().forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));", "Object.entries(STATUS).forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));")
+          s=s.replace("visibleStatuses().map(([code,s])=>", "Object.entries(STATUS).map(([code,s])=>")
+          s=s.replace("  const statusFilterText=(statusFilter.value==='ALL'||isRestrictedReceptionistStatus(statusFilter.value))?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;", "  const statusFilterText=statusFilter.value==='ALL'?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;")
+          s=s.replace("  const order=(isReceptionist()?['OD','VR','VC','VD']:['OD','VR','VC','VD','OS','OO']);", "  const order=['OD','VR','VC','VD','OS','OO'];")
+          start=s.find('function openSheet(id){'); end=s.find('function renderSheetStatus',start)
+          if start>=0 and end>start:
+              original='''function openSheet(id){
+ const u=units.find(x=>x.id===id); if(!u)return;
+ editingId=id;pendingStatus=u.status;
+ document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;
+ document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;
+ document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';
+ renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';
+}
+'''
+              s=s[:start]+original+s[end:]
+          tag='<script src="hk-inline-condition.js"></script>'
+          if tag not in s:
+              s=s.replace('</body>',tag+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+
+          # Supervisor HK and Housekeeping can view the OS/OO defect detail and
+          # latest Supervisor-HK follow-up; Resepsionis cannot.
+          p=Path('hk-inline-condition.js')
+          h=p.read_text(encoding='utf-8')
+          h=h.replace("async function viewDetail(){if(!R()&&!S())return;", "async function viewDetail(){if(R()||(!S()&&!H()))return;")
+          p.write_text(h,encoding='utf-8')
           PY
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Fix guest save via RPC"
+          git add index.html hk-inline-condition.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix guest save via RPC and room status roles"
           git push
