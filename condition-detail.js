@@ -2,8 +2,8 @@
    The native unit modal already renders Rincian Kondisi.
    This module must NOT render another condition card. */
 (function(){
-  if(window.__conditionDetailSafetyV5)return;
-  window.__conditionDetailSafetyV5=true;
+  if(window.__conditionDetailSafetyV6)return;
+  window.__conditionDetailSafetyV6=true;
 
   function removeDuplicateDetails(){
     const boxes=[...document.querySelectorAll('.condition-detail-box')];
@@ -28,15 +28,16 @@
   }
 
   function bind(){
-    ['pointerdown','touchstart','click'].forEach(type=>{
-      document.addEventListener(type,e=>{
-        const btn=e.target?.closest?.('.sheet .close,[data-close-sheet],#sheetClose');
-        if(!btn)return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        closeSheet();
-      },true);
-    });
+    // IMPORTANT: handle only the final click. On mobile, closing on
+    // pointerdown/touchstart can expose the unit card underneath and the
+    // following click can reopen the modal immediately.
+    document.addEventListener('click',e=>{
+      const btn=e.target?.closest?.('.sheet .close,[data-close-sheet],#sheetClose');
+      if(!btn)return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeSheet();
+    },true);
 
     const observer=new MutationObserver(removeDuplicateDetails);
     observer.observe(document.body,{childList:true,subtree:true});
