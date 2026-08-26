@@ -2,6 +2,9 @@
   if(window.__hkInlineCondition) return;
   window.__hkInlineCondition=true;
   const isHK=()=>{const t=(document.body.innerText||'').toLowerCase(); return t.includes('housekeeping') && !t.includes('supervisor hk');};
+  function getClient(){
+    try{return typeof supabaseClient!=='undefined' ? supabaseClient : null;}catch(e){return null;}
+  }
   function selected(){return document.querySelector('#statusOptions .status-option.selected')?.dataset.status||'';}
   function injectFields(){
     if(!isHK()) return;
@@ -14,8 +17,9 @@
     grid.parentNode.insertBefore(box,grid.nextSibling);
   }
   async function currentUnit(){
+    const client=getClient(); if(!client)throw new Error('Koneksi database belum siap. Silakan coba lagi.');
     const title=document.getElementById('sheetTitle')?.textContent||''; const m=title.match(/UNIT\s+(.+)/i); if(!m)return null;
-    const unitNo=m[1].trim(); const {data,error}=await window.supabaseClient.from('room_units').select('id,unit_number,tower,floor,status').eq('unit_number',unitNo).maybeSingle(); if(error)throw error; return data;
+    const unitNo=m[1].trim(); const {data,error}=await client.from('room_units').select('id,unit_number,tower,floor,status').eq('unit_number',unitNo).maybeSingle(); if(error)throw error; return data;
   }
   async function saveHKReport(e){
     if(!isHK()) return;
@@ -25,8 +29,9 @@
     try{
       const reason=document.getElementById('hkInlineReason')?.value.trim()||''; const note=document.getElementById('hkInlineNote')?.value.trim()||'';
       if(!reason||!note){alert('Reason dan Note wajib diisi untuk OS / OO.');return;}
+      const client=getClient(); if(!client)throw new Error('Koneksi database belum siap. Silakan coba lagi.');
       const u=await currentUnit(); if(!u)throw new Error('Unit tidak ditemukan.');
-      const {error}=await window.supabaseClient.rpc('report_room_condition',{p_unit_id:Number(u.id),p_status:s,p_reason:reason,p_note:note});
+      const {error}=await client.rpc('report_room_condition',{p_unit_id:Number(u.id),p_status:s,p_reason:reason,p_note:note});
       if(error)throw error;
       alert(`Status ${s} tersimpan beserta Reason & Note.`); location.reload();
     }catch(err){console.error(err);alert(err.message||'Gagal menyimpan laporan kondisi.');}
