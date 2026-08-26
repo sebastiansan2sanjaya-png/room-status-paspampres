@@ -1,4 +1,4 @@
-name: Apply receptionist OS-OO visibility fix
+name: Correct room status role visibility
 on:
   push:
     paths:
@@ -11,29 +11,60 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch index.html
+      - name: Restore OS OO status visibility and patch HK detail access
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          s=s.replace("const ROLE_PERMISSIONS={\n  editor:['OD'],\n  receptionist:['OD'],\n  housekeeping:['VC','VD','OS','OO'],\n  supervisor_fo:['OD'],\n  supervisor_hk:['VC','VR','OS','OO'],\n  view_only:[]\n};", "const ROLE_PERMISSIONS={\n  editor:['OD'],\n  receptionist:['OD'],\n  housekeeping:['VC','VD','OS','OO'],\n  supervisor_fo:['OD'],\n  supervisor_hk:['VC','VR','OS','OO'],\n  view_only:[]\n};\n\nconst RECEPTIONIST_HIDDEN_STATUSES=['OS','OO'];\nfunction isReceptionist(){return currentProfile?.role==='receptionist';}\nfunction isRestrictedReceptionistStatus(code){return isReceptionist() && RECEPTIONIST_HIDDEN_STATUSES.includes(code);}\nfunction visibleStatuses(){return Object.entries(STATUS).filter(([code])=>!isRestrictedReceptionistStatus(code));}")
-          s=s.replace("Object.entries(STATUS).forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));", "visibleStatuses().forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));")
-          s=s.replace("document.getElementById('statusGrid').innerHTML=Object.entries(STATUS).map(([code,s])=>`", "document.getElementById('statusGrid').innerHTML=visibleStatuses().map(([code,s])=>`")
-          s=s.replace("       ${Object.entries(STATUS).map(([code,s])=>{", "       ${visibleStatuses().map(([code,s])=>{")
-          s=s.replace("function filtered(){\n  const q=document.getElementById('search').value.trim().toLowerCase();\n  const tf=towerFilter.value,sf=statusFilter.value;\n  return units.filter(u=>(tf==='ALL'||u.tower===tf)&&(sf==='ALL'||u.status===sf)&&(!q||u.number.toLowerCase().includes(q)||u.tower.toLowerCase().includes(q)));\n}", "function filtered(){\n  const q=document.getElementById('search').value.trim().toLowerCase();\n  const tf=towerFilter.value;\n  const sf=isReceptionist() && RECEPTIONIST_HIDDEN_STATUSES.includes(statusFilter.value) ? 'ALL' : statusFilter.value;\n  return units.filter(u=>(tf==='ALL'||u.tower===tf)&&(sf==='ALL'||u.status===sf)&&(!q||u.number.toLowerCase().includes(q)||u.tower.toLowerCase().includes(q)));\n}")
-          s=s.replace("  const statusFilterText=statusFilter.value==='ALL'?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;", "  const statusFilterText=(statusFilter.value==='ALL'||isRestrictedReceptionistStatus(statusFilter.value))?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;")
-          s=s.replace("  const order=['OD','VR','VC','VD','OS','OO'];", "  const order=(isReceptionist()?['OD','VR','VC','VD']:['OD','VR','VC','VD','OS','OO']);")
-          old="""function openSheet(id){\n const u=units.find(x=>x.id===id); if(!u)return;\n editingId=id;pendingStatus=u.status;\n document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;\n document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;\n document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';\n renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';\n}"""
-          new="""function openSheet(id){\n const u=units.find(x=>x.id===id); if(!u)return;\n editingId=id;pendingStatus=u.status;\n document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;\n document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;\n document.getElementById('lastUpdate').textContent=formatDate(u.updated);\n document.getElementById('updatedBy').value=u.updatedBy||'';\n const restricted=isRestrictedReceptionistStatus(u.status);\n const statusSection=document.getElementById('statusOptions')?.closest('.sheet-section');\n const metaSection=document.getElementById('updatedBy')?.closest('.meta');\n const actions=document.querySelector('.actions');\n if(statusSection)statusSection.classList.toggle('hidden',restricted);\n if(metaSection)metaSection.classList.toggle('hidden',restricted);\n if(actions)actions.classList.toggle('hidden',restricted);\n renderSheetStatus(u);\n if(!restricted){renderOptions();renderGuestSection(u);}else{const guestSection=document.getElementById('guestSection');if(guestSection)guestSection.classList.add('hidden');}\n document.getElementById('overlay').classList.add('show');\n document.getElementById('sheet').style.display='block';\n}"""
-          s=s.replace(old,new)
-          p.write_text(s,encoding='utf-8')
+          import re
+
+          # 1) Resepsionis must still see OS/OO status cards, filters and counts.
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          s = re.sub(
+              r"\nconst RECEPTIONIST_HIDDEN_STATUSES=\['OS','OO'\];.*?function visibleStatuses\(\)\{.*?\}\n",
+              "\n",
+              s,
+              flags=re.S,
+          )
+          s = s.replace("visibleStatuses().forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));",
+                        "Object.entries(STATUS).forEach(([code,s])=>statusFilter.insertAdjacentHTML('beforeend',`<option value=\"${code}\">${code} — ${s.name}</option>`));")
+          s = s.replace("visibleStatuses().map(([code,s])=>", "Object.entries(STATUS).map(([code,s])=>")
+          s = s.replace("  const statusFilterText=(statusFilter.value==='ALL'||isRestrictedReceptionistStatus(statusFilter.value))?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;",
+                        "  const statusFilterText=statusFilter.value==='ALL'?'Semua Status':`${statusFilter.value} — ${STATUS[statusFilter.value].name}`;")
+          s = s.replace("  const order=(isReceptionist()?['OD','VR','VC','VD']:['OD','VR','VC','VD','OS','OO']);",
+                        "  const order=['OD','VR','VC','VD','OS','OO'];")
+
+          # Restore the original unit sheet behavior. Permission filtering already
+          # prevents Resepsionis from editing OS/OO; only HK condition details are restricted below.
+          start = s.find('function openSheet(id){')
+          end = s.find('function renderSheetStatus', start)
+          if start >= 0 and end > start:
+              original = '''function openSheet(id){
+ const u=units.find(x=>x.id===id); if(!u)return;
+ editingId=id;pendingStatus=u.status;
+ document.getElementById('sheetTitle').textContent=`UNIT ${u.number}`;
+ document.getElementById('sheetSub').textContent=`Tower ${u.tower.slice(1)} • Lantai ${u.floor}`;
+ document.getElementById('lastUpdate').textContent=formatDate(u.updated);document.getElementById('updatedBy').value=u.updatedBy||'';
+ renderSheetStatus(u);renderOptions();renderGuestSection(u);document.getElementById('overlay').classList.add('show');document.getElementById('sheet').style.display='block';
+}
+'''
+              s = s[:start] + original + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+          # 2) HK condition details: hidden from Resepsionis, available to
+          # Supervisor HK and Housekeeping when the unit is OS/OO.
+          p = Path('hk-inline-condition.js')
+          h = p.read_text(encoding='utf-8')
+          h = h.replace("async function viewDetail(){if(!R()&&!S())return;",
+                        "async function viewDetail(){if(R()||(!S()&&!H()))return;")
+          p.write_text(h, encoding='utf-8')
           PY
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
+          git add index.html hk-inline-condition.js
           git diff --cached --quiet && exit 0
-          git commit -m 'Fix receptionist OS OO detail visibility'
+          git commit -m 'Restore OS OO visibility and HK follow-up details'
           git push
