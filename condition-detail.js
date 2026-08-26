@@ -47,7 +47,7 @@
     const currentStatus=detectCurrentStatus();
     if(!['OS','OO'].includes(currentStatus))return;
 
-    const {data:unit,error:ue}=await client
+    const {data:unit,error:ue}=await supabaseClient
       .from('room_units')
       .select('id')
       .eq('unit_number',ctx.unit)
@@ -55,7 +55,7 @@
       .maybeSingle();
     if(ue||!unit)return;
 
-    const {data:reports,error:re}=await client
+    const {data:reports,error:re}=await supabaseClient
       .from('room_condition_reports')
       .select('id,status,current_status,reason,note,reported_at,resolution_status,validated_at,resolved_status')
       .eq('unit_id',unit.id)
@@ -77,7 +77,7 @@
     const box=document.createElement('div');
     box.id='conditionDetailBox';
     box.className='condition-detail-box';
-    box.style.cssText='margin-top:14px;padding:14px;border:1px solid #e1e6ef;border-radius:14px;background:#f8fafc';
+    box.style.cssText='margin-top:14px;padding:14px;border:1px solid #e1e6ef;border-radius:14px;background:#f8fafc;width:100%;box-sizing:border-box;grid-column:1 / -1;min-width:0;';
 
     const color=status==='OO'?'#ef5558':'#8c62d7';
     box.innerHTML=`
