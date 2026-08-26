@@ -1,6 +1,6 @@
 (function(){
-  if(window.__conditionDetailLoadedV3) return;
-  window.__conditionDetailLoadedV3=true;
+  if(window.__conditionDetailLoadedV4) return;
+  window.__conditionDetailLoadedV4=true;
 
   function getClient(){try{return typeof supabaseClient!=='undefined'?supabaseClient:null;}catch(e){return null;}}
   function isReception(){return /resepsionis/i.test(document.body.innerText||'');}
@@ -15,12 +15,37 @@
   }
 
   function esc(v){
-    return String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+    return String(v??'').replace(/[&<>\\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\"':'&quot;'}[c]));
   }
 
   function reportTime(v){
     const d=new Date(v);
     return isNaN(d)?String(v??''):d.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+  }
+
+  function removeDuplicateDetails(){
+    document.querySelectorAll('.condition-detail-box').forEach(el=>{
+      if(el.id!=='conditionDetailBox')el.remove();
+    });
+  }
+
+  function closeSheetHard(){
+    const sheet=document.querySelector('.sheet');
+    const overlay=document.querySelector('.overlay');
+    if(sheet){sheet.classList.remove('show');sheet.style.display='none';}
+    if(overlay){overlay.classList.remove('show');overlay.style.display='none';}
+    document.getElementById('conditionDetailBox')?.remove();
+  }
+
+  function bindCloseFix(){
+    const handler=e=>{
+      const btn=e.target?.closest?.('.close,.sheet .close,[data-close-sheet],#sheetClose');
+      if(!btn)return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeSheetHard();
+    };
+    ['pointerdown','touchstart','click'].forEach(type=>document.addEventListener(type,handler,true));
   }
 
   function detectCurrentStatus(){
@@ -42,6 +67,7 @@
     const client=getClient();
     if(!ctx||!client)return;
 
+    removeDuplicateDetails();
     document.getElementById('conditionDetailBox')?.remove();
 
     const currentStatus=detectCurrentStatus();
@@ -91,8 +117,10 @@
       <div style="font-size:12px;line-height:1.5;margin-top:4px;white-space:pre-wrap">${esc(r.note||'-')}</div>
       <div style="font-size:10px;color:#8b95a3;margin-top:10px">Dilaporkan: ${esc(reportTime(r.reported_at))}</div>`;
 
+    removeDuplicateDetails();
     if(anchor) anchor.parentNode.insertBefore(box,anchor);
     else parent.insertBefore(box,actions||null);
+    removeDuplicateDetails();
   }
 
   function scheduleLoad(){
@@ -101,9 +129,13 @@
   }
 
   function init(){
+    bindCloseFix();
     document.addEventListener('click',e=>{
       if(e.target.closest?.('.unit'))scheduleLoad();
     },true);
+
+    const observer=new MutationObserver(()=>removeDuplicateDetails());
+    observer.observe(document.body,{childList:true,subtree:true});
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
