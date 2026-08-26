@@ -1,0 +1,39 @@
+name: Enforce room status role policy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+
+permissions:
+  contents: write
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enforce UI permissions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "const ROLE_PERMISSIONS={\n  editor:['VR','VC','VD','OS','OO','OD'],\n  receptionist:['VR','VC','VD','OS','OO','OD'],\n  housekeeping:['VC','VD'],\n  supervisor_fo:['VR','VC','VD','OS','OO','OD'],\n  supervisor_hk:['VC','VR','OS','OO'],"
+          new = "const ROLE_PERMISSIONS={\n  editor:['OD'],\n  receptionist:['OD'],\n  housekeeping:['VC','VD','OS','OO'],\n  supervisor_fo:['OD'],\n  supervisor_hk:['VC','VR','OS','OO'],"
+          if old not in s:
+              raise SystemExit('Expected ROLE_PERMISSIONS block not found; no change made.')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Commit policy change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Enforce room status role policy"
+          git push
