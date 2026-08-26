@@ -1,0 +1,2 @@
+FINAL ROLE FIX TRIGGER — 2026-08-26 13:00 WITA
+Restore OS/OO visibility for Resepsionis; allow Housekeeping + Supervisor HK condition details and HK follow-up.
