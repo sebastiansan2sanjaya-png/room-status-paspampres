@@ -19,7 +19,8 @@
   if(!r.ok)throw new Error('Gagal memuat versi utama');
   let html=await r.text();
   html=html.replace(/<head>/i,'<head><base href="'+baseUrl+'">');
-  html=html.replace(/<\/body>/i,'<script src="'+roleUrl+'"><\/script></body>');
+  html=html.replace(/<\/body>/i,'<script src="'+roleUrl+'"><\/script><script src="occupancy-recap.js"></script>
+</body>');
   frame.srcdoc=html;
  }catch(e){
   frame.remove();
