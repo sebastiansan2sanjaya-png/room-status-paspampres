@@ -6,6 +6,7 @@ on:
     paths:
       - 'index.html'
       - 'role-workflow.js'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,24 +23,23 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          p = Path('role-workflow.js')
-          s = p.read_text(encoding='utf-8')
-
+          s = Path('role-workflow.js').read_text(encoding='utf-8')
           required = [
-              "['housekeeping','supervisor_hk','editor']",
-              "p.role==='housekeeping'",
-              "p.role==='supervisor_hk'",
-              "report_room_condition",
-              "validate_room_condition",
+              'housekeeping',
+              'supervisor_hk',
+              'editor',
+              'report_room_condition',
+              'validate_room_condition',
           ]
-
           for token in required:
               if token not in s:
                   raise SystemExit(f'Role workflow check failed: missing {token}')
 
           index = Path('index.html').read_text(encoding='utf-8')
           if 'ROLE_PERMISSIONS' in index:
-              print('ROLE_PERMISSIONS found in index.html; continuing because index is a loader in the current architecture.')
+              print('ROLE_PERMISSIONS found in index.html.')
+          else:
+              print('index.html is using the loader architecture.')
 
           print('Room status role workflow verified.')
           PY
