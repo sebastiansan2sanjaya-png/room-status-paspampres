@@ -1,12 +1,35 @@
-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Room Status — Rusun Paspampres 2026</title></head><body><div id="boot" style="font-family:Arial;padding:20px">Memuat Room Status…</div><script>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Room Status — Rusun Paspampres 2026</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden}#appframe{display:block;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<iframe id="appframe" title="Room Status"></iframe>
+<script>
 (async()=>{
+ const frame=document.getElementById('appframe');
  const url='https://raw.githubusercontent.com/sebastiansan2sanjaya-png/room-status-paspampres/b265e244dbfabcb435a3c483602bae04c8ddf42a/index.html';
  try{
-  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Gagal memuat versi utama');
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok)throw new Error('Gagal memuat versi utama');
   let html=await r.text();
-  html=html.replace('<script src="occupancy-recap.js"></script>
-</body>','<script src="role-workflow.js?v=20260827-1"></script></body>');
-  document.open();document.write(html);document.close();
- }catch(e){document.getElementById('boot').textContent='Gagal memuat Room Status. Silakan refresh.';console.error(e)}
+  html=html.replace('<script src="occupancy-recap.js"></script>','<script src="role-workflow.js?v=20260827-2"></script>');
+  const doc=frame.contentDocument||frame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+ }catch(e){
+  frame.remove();
+  const p=document.createElement('div');
+  p.style.cssText='font-family:Arial;padding:24px';
+  p.textContent='Gagal memuat Room Status. Silakan refresh.';
+  document.body.appendChild(p);
+  console.error(e);
+ }
 })();
-</script></body></html>
+</script>
+</body>
+</html>
