@@ -6,7 +6,8 @@
   let html=await r.text();
   html=html.replace('id="updatedBy" class="meta-input" value="" placeholder="Nama PIC"','id="updatedBy" class="meta-input" value="" placeholder="Nama PIC" readonly aria-readonly="true" tabindex="-1"');
   const guard=`<script>(function(){function lockPic(){const el=document.getElementById('updatedBy');if(!el)return;el.readOnly=true;el.setAttribute('aria-readonly','true');el.setAttribute('tabindex','-1');if(window.currentProfile&&currentProfile.username)el.value=currentProfile.username;}document.addEventListener('click',function(e){if(e.target&&e.target.id==='save')lockPic();},true);document.addEventListener('input',function(e){if(e.target&&e.target.id==='updatedBy')e.target.value=(window.currentProfile&&currentProfile.username)||'';},true);setInterval(lockPic,500);})();<\/script>`;
-  html=html.replace('</body>',guard+'</body>');
+  html=html.replace('<script src="occupancy-recap.js"></script>
+</body>',guard+'</body>');
   document.open();document.write(html);document.close();
  }catch(e){document.getElementById('boot').textContent='Gagal memuat Room Status. Silakan refresh.';console.error(e)}
 })();
