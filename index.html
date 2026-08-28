@@ -11,22 +11,54 @@
 <iframe id="appframe" title="Room Status" src="app.html?v=20260828-restore"></iframe>
 <script>
 const frame=document.getElementById('appframe');
-frame.addEventListener('load',()=>{
+function applyUiFix(){
   const d=frame.contentDocument;
   if(!d||d.getElementById('parentUiFix'))return;
   const s=d.createElement('style');s.id='parentUiFix';s.textContent=`
     html,body{min-height:100%;overflow-x:hidden}
     .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:radial-gradient(circle at 15% 10%,rgba(53,111,242,.10),transparent 32%),radial-gradient(circle at 90% 85%,rgba(34,170,168,.08),transparent 30%),linear-gradient(180deg,#f8faff 0%,#f3f6fb 100%)}
     .auth-card{width:min(420px,100%);box-sizing:border-box;padding:30px 26px 24px;border:1px solid rgba(255,255,255,.9);border-radius:24px;background:rgba(255,255,255,.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 55px rgba(34,53,84,.12)}
-    .auth-brand{font-size:11px;font-weight:800;letter-spacing:.12em;color:#356ff2;text-align:center}
-    .auth-title{font-size:30px;font-weight:850;letter-spacing:-.8px;color:#18212f;text-align:center;margin:7px 0 26px}
-    .auth-label{margin-top:14px}.auth-btn{margin-top:18px}.auth-msg{min-height:18px;margin-top:9px;text-align:center;font-size:11px;color:#ef5558}
-    .auth-role{margin-top:16px;padding-top:16px;border-top:1px solid #e8ecf2}.auth-role:before{content:'ATAU';display:block;text-align:center;font-size:9px;font-weight:800;letter-spacing:.1em;color:#9aa4b2;margin:-22px auto 11px;background:rgba(255,255,255,.82);width:38px}
-    .view-only-btn{box-shadow:0 8px 22px rgba(34,53,84,.05)}
-    @media(max-width:480px){.auth-screen{padding:18px}.auth-card{padding:26px 20px 21px;border-radius:21px}.auth-title{font-size:27px;margin-bottom:22px}}
+    .auth-brand{font-size:11px;font-weight:800;letter-spacing:.12em;color:#356ff2;text-align:center}.auth-title{font-size:30px;font-weight:850;letter-spacing:-.8px;color:#18212f;text-align:center;margin:7px 0 26px}.auth-label{margin-top:14px}.auth-btn{margin-top:18px}.auth-msg{min-height:18px;margin-top:9px;text-align:center;font-size:11px;color:#ef5558}.auth-role{margin-top:16px;padding-top:16px;border-top:1px solid #e8ecf2}.auth-role:before{content:'ATAU';display:block;text-align:center;font-size:9px;font-weight:800;letter-spacing:.1em;color:#9aa4b2;margin:-22px auto 11px;background:rgba(255,255,255,.82);width:38px}.view-only-btn{box-shadow:0 8px 22px rgba(34,53,84,.05)}
+    .summary-link{display:none!important}
+    .total .total-label{font-size:11px}.total .total-number{font-size:38px}.total .total-number+*{font-size:10px!important}
+    .towers{display:none!important}
+    .tower-summary-title{font-size:13px!important;font-weight:800!important;text-align:center!important;letter-spacing:.02em!important;margin:0!important}.tower-summary-subtitle{font-size:10px!important;text-align:center!important;color:#687386!important;margin:2px 0 10px!important}
+    .tower-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 10px 12px}.tower-summary-item{border:1px solid #e6eaf0;border-radius:13px;background:#fff;padding:10px}.tower-summary-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.tower-summary-item-head strong{font-size:13px}.tower-summary-item-head span{font-size:9px;color:#687386}.tower-summary-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.tower-summary-stat{border:1px solid #eef1f5;border-radius:8px;padding:6px 4px;text-align:center}.tower-summary-stat b{display:block;font-size:12px}.tower-summary-stat small{font-size:8px;color:#687386}.tower-summary-stat.vr b{color:#62bd32}.tower-summary-stat.vc b{color:#4d9be8}.tower-summary-stat.vd b{color:#f39a2f}.tower-summary-stat.os b{color:#8c62d7}.tower-summary-stat.oo b{color:#ef5558}.tower-summary-stat.od b{color:#22aaa8}
+    @media(max-width:480px){.auth-screen{padding:18px}.auth-card{padding:26px 20px 21px;border-radius:21px}.auth-title{font-size:27px;margin-bottom:22px}.tower-summary-grid{gap:7px;padding-left:7px;padding-right:7px}.tower-summary-item{padding:8px}.tower-summary-stat{padding:5px 3px}}
   `;d.head.appendChild(s);
-  ['brand-ui.js','role-workflow.js','occupancy-recap.js','role-restore.js'].forEach(src=>{if(!d.querySelector('script[data-injected="'+src+'"]')){const x=d.createElement('script');x.src=src;x.dataset.injected=src;d.body.appendChild(x)}});
-});
+  const run=()=>{
+    const all=[...d.querySelectorAll('*')];
+    const heading=all.find(e=>e.children.length===0&&e.textContent.trim()==='TOWER SUMMARY');
+    if(heading){
+      heading.classList.add('tower-summary-title');
+      const sub=heading.parentElement?.querySelector(':scope > *:not(.tower-summary-title)');
+      if(sub&&sub.textContent.includes('Kondisi 60 unit'))sub.classList.add('tower-summary-subtitle');
+      const card=heading.closest('.card')||heading.parentElement;
+      if(card&&!card.querySelector('.tower-summary-grid')){
+        const blocks=[...d.querySelectorAll('.tower-block')];
+        const grid=d.createElement('div');grid.className='tower-summary-grid';
+        const codes=['VR','VC','VD','OS','OO','OD'];
+        blocks.forEach(block=>{
+          const title=block.querySelector('.tower-title')?.textContent.trim()||'';
+          const units=[...block.querySelectorAll('.unit')];
+          if(!title||!units.length)return;
+          const counts=Object.fromEntries(codes.map(c=>[c,0]));
+          units.forEach(u=>{const badge=u.querySelector('.badge');const code=(badge?.textContent||'').trim().slice(0,2).toUpperCase();if(counts[code]!==undefined)counts[code]++});
+          const item=d.createElement('div');item.className='tower-summary-item';
+          item.innerHTML='<div class="tower-summary-item-head"><strong>'+title+'</strong><span>'+units.length+' Unit</span></div><div class="tower-summary-stats">'+codes.map(c=>'<div class="tower-summary-stat '+c.toLowerCase()+'"><b>'+c+'</b><small>'+counts[c]+'</small></div>').join('')+'</div>';
+          grid.appendChild(item);
+        });
+        if(grid.children.length){
+          [...card.children].forEach(ch=>{if(ch!==heading&&!ch.classList.contains('tower-summary-subtitle'))ch.style.display='none'});
+          card.appendChild(grid);
+        }
+      }
+    }
+  };
+  run();
+  new MutationObserver(run).observe(d.body,{childList:true,subtree:true});
+}
+frame.addEventListener('load',applyUiFix);
 </script>
 <script src="occupancy-recap.js"></script>
 </body>
