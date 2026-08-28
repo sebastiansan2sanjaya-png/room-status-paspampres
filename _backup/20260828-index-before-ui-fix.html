@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Room Status — Rusun Paspampres 2026</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f7f9fc}#appframe{display:block;width:100%;height:100%;border:0;background:#f7f9fc}</style>
+</head>
+<body>
+<iframe id="appframe" title="Room Status" src="app.html?v=20260828-1"></iframe>
+<script>
+const frame=document.getElementById('appframe');
+frame.addEventListener('load',()=>{
+  const d=frame.contentDocument;
+  if(!d||d.getElementById('parentUiFix'))return;
+  const s=d.createElement('style');s.id='parentUiFix';s.textContent=`
+    html,body{min-height:100%;overflow-x:hidden}
+    .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:radial-gradient(circle at 15% 10%,rgba(53,111,242,.10),transparent 32%),radial-gradient(circle at 90% 85%,rgba(34,170,168,.08),transparent 30%),linear-gradient(180deg,#f8faff 0%,#f3f6fb 100%)}
+    .auth-card{width:min(420px,100%);box-sizing:border-box;padding:30px 26px 24px;border:1px solid rgba(255,255,255,.9);border-radius:24px;background:rgba(255,255,255,.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 20px 55px rgba(34,53,84,.12)}
+    .auth-brand{font-size:11px;font-weight:800;letter-spacing:.12em;color:#356ff2;text-align:center}
+    .auth-title{font-size:30px;font-weight:850;letter-spacing:-.8px;color:#18212f;text-align:center;margin:7px 0 26px}
+    .auth-label{margin-top:14px}
+    .auth-btn{margin-top:18px}
+    .auth-msg{min-height:18px;margin-top:9px;text-align:center;font-size:11px;color:#ef5558}
+    .auth-role{margin-top:16px;padding-top:16px;border-top:1px solid #e8ecf2}
+    .auth-role:before{content:'ATAU';display:block;text-align:center;font-size:9px;font-weight:800;letter-spacing:.1em;color:#9aa4b2;margin:-22px auto 11px;background:rgba(255,255,255,.82);width:38px}
+    .view-only-btn{box-shadow:0 8px 22px rgba(34,53,84,.05)}
+    @media(max-width:480px){.auth-screen{padding:18px}.auth-card{padding:26px 20px 21px;border-radius:21px}.auth-title{font-size:27px;margin-bottom:22px}}
+  `;d.head.appendChild(s);
+  ['brand-ui.js','role-workflow.js'].forEach(src=>{if(!d.querySelector('script[data-injected="'+src+'"]')){const x=d.createElement('script');x.src=src;x.dataset.injected=src;d.body.appendChild(x)}});
+});
+</script>
+<script src="occupancy-recap.js"></script>
+</body>
+</html>
